@@ -218,16 +218,50 @@ function loadArtwork(src) {
 async function drawCollectionImage(includeArtwork = true) {
   const canvas = elements.collectionCanvas;
   const duplicatePokemon = pokemon.filter((item) => state.counts[item.id] > 1);
-  const imagePokemon = imageMode === "duplicates" ? duplicatePokemon : pokemon;
-  const columns = imageMode === "duplicates" ? 5 : 10;
+  const missingPokemon = pokemon.filter((item) => state.counts[item.id] === 0);
+  const imagePokemon =
+    imageMode === "duplicates"
+      ? duplicatePokemon
+      : imageMode === "missing"
+        ? missingPokemon
+        : pokemon;
+  const isListMode = imageMode === "duplicates" || imageMode === "missing";
+  const columns = isListMode ? 5 : 10;
   const rows = Math.max(1, Math.ceil(imagePokemon.length / columns));
   canvas.width = 1800;
-  canvas.height = imageMode === "duplicates" ? Math.max(650, 330 + rows * 235) : 1740;
+  canvas.height = isListMode ? Math.max(650, 330 + rows * 235) : 1740;
   const context = canvas.getContext("2d");
   const counts = Object.values(state.counts);
   const owned = counts.filter((count) => count > 0).length;
   const duplicates = counts.reduce((sum, count) => sum + Math.max(0, count - 1), 0);
   const percent = Math.round((owned / pokemon.length) * 100);
+  const headerColor =
+    imageMode === "duplicates" ? "#191918" : imageMode === "missing" ? "#3564d8" : "#ff5b32";
+  const accentColor = imageMode === "missing" ? "#3564d8" : "#ff5b32";
+  const title =
+    imageMode === "duplicates"
+      ? "나의 중복 띠부씰"
+      : imageMode === "missing"
+        ? "아직 없는 띠부씰"
+        : "나의 30주년 띠부씰 도감";
+  const subtitle =
+    imageMode === "duplicates"
+      ? "교환 가능한 중복 씰 모음"
+      : imageMode === "missing"
+        ? "친구에게 공유하기 좋은 미보유 씰 목록"
+        : "포켓몬 아트웍 스페셜 · 100종";
+  const headlineMetric =
+    imageMode === "duplicates"
+      ? `${duplicatePokemon.length}종`
+      : imageMode === "missing"
+        ? `${missingPokemon.length}종`
+        : `${percent}%`;
+  const headlineDetail =
+    imageMode === "duplicates"
+      ? `여분으로 가진 씰 ${duplicates}장`
+      : imageMode === "missing"
+        ? `아직 필요한 씰 ${missingPokemon.length}종`
+        : `보유 ${owned}종  ·  미보유 ${100 - owned}종  ·  중복 ${duplicates}장`;
   const artworks = includeArtwork
     ? await Promise.all(
         imagePokemon.map((item) => {
@@ -242,72 +276,59 @@ async function drawCollectionImage(includeArtwork = true) {
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = "#f7f5ef";
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = imageMode === "duplicates" ? "#191918" : "#ff5b32";
+  context.fillStyle = headerColor;
   context.fillRect(0, 0, canvas.width, 255);
 
   context.fillStyle = "#ffffff";
   context.font = "900 68px sans-serif";
-  context.fillText(
-    imageMode === "duplicates" ? "나의 중복 띠부씰" : "나의 30주년 띠부씰 도감",
-    80,
-    100,
-  );
+  context.fillText(title, 80, 100);
   context.font = "600 28px sans-serif";
   context.fillStyle = "rgba(255,255,255,.85)";
-  context.fillText(
-    imageMode === "duplicates"
-      ? "교환 가능한 중복 씰 모음"
-      : "포켓몬 아트웍 스페셜 · 100종",
-    82,
-    150,
-  );
+  context.fillText(subtitle, 82, 150);
 
   context.fillStyle = "#ffd84d";
   context.font = "900 76px sans-serif";
   context.textAlign = "right";
-  context.fillText(
-    imageMode === "duplicates" ? `${duplicatePokemon.length}종` : `${percent}%`,
-    1720,
-    105,
-  );
+  context.fillText(headlineMetric, 1720, 105);
   context.font = "700 25px sans-serif";
   context.fillStyle = "#ffffff";
-  context.fillText(
-    imageMode === "duplicates"
-      ? `여분으로 가진 씰 ${duplicates}장`
-      : `보유 ${owned}종  ·  미보유 ${100 - owned}종  ·  중복 ${duplicates}장`,
-    1720,
-    155,
-  );
+  context.fillText(headlineDetail, 1720, 155);
   context.textAlign = "left";
 
-  const cardWidth = imageMode === "duplicates" ? 312 : 156;
-  const cardHeight = imageMode === "duplicates" ? 210 : 125;
-  const gap = imageMode === "duplicates" ? 20 : 12;
-  const startX = imageMode === "duplicates" ? 80 : 66;
+  const cardWidth = isListMode ? 312 : 156;
+  const cardHeight = isListMode ? 210 : 125;
+  const gap = isListMode ? 20 : 12;
+  const startX = isListMode ? 80 : 66;
   const startY = 295;
 
-  if (imageMode === "duplicates" && imagePokemon.length === 0) {
+  if (isListMode && imagePokemon.length === 0) {
     context.fillStyle = "#77736b";
     context.font = "700 42px sans-serif";
     context.textAlign = "center";
-    context.fillText("아직 중복으로 가진 씰이 없어요.", canvas.width / 2, 430);
+    context.fillText(
+      imageMode === "duplicates"
+        ? "아직 중복으로 가진 씰이 없어요."
+        : "전부 모았어요! 없는 씰이 없어요.",
+      canvas.width / 2,
+      430,
+    );
     context.textAlign = "left";
   }
 
   imagePokemon.forEach((item, index) => {
     const count = state.counts[item.id];
     const isOwned = count > 0;
+    const showAsActive = isOwned || imageMode === "missing";
     const column = index % columns;
     const row = Math.floor(index / columns);
     const x = startX + column * (cardWidth + gap);
     const y = startY + row * (cardHeight + gap);
 
-    context.fillStyle = isOwned ? "#ffffff" : "#e7e4dc";
+    context.fillStyle = showAsActive ? "#ffffff" : "#e7e4dc";
     roundedRect(context, x, y, cardWidth, cardHeight, 14);
 
-    if (isOwned) {
-      context.strokeStyle = "#ff5b32";
+    if (showAsActive) {
+      context.strokeStyle = accentColor;
       context.lineWidth = 3;
       context.strokeRect(x + 1.5, y + 1.5, cardWidth - 3, cardHeight - 3);
     }
@@ -315,41 +336,41 @@ async function drawCollectionImage(includeArtwork = true) {
     const artwork = artworks[index];
     if (artwork) {
       context.save();
-      context.filter = isOwned ? "none" : "grayscale(1) opacity(.35)";
-      if (imageMode === "duplicates") {
+      context.filter = showAsActive ? "none" : "grayscale(1) opacity(.35)";
+      if (isListMode) {
         context.drawImage(artwork, x + 76, y + 12, 160, 160);
       } else {
         context.drawImage(artwork, x + 38, y + 8, 80, 80);
       }
       context.restore();
     } else {
-      context.fillStyle = isOwned ? "#ffede8" : "#d6d2c9";
+      context.fillStyle = showAsActive ? (imageMode === "missing" ? "#edf2ff" : "#ffede8") : "#d6d2c9";
       context.beginPath();
       context.arc(
         x + cardWidth / 2,
-        y + (imageMode === "duplicates" ? 86 : 47),
-        imageMode === "duplicates" ? 60 : 34,
+        y + (isListMode ? 86 : 47),
+        isListMode ? 60 : 34,
         0,
         Math.PI * 2,
       );
       context.fill();
-      context.fillStyle = isOwned ? "#ff5b32" : "#aaa69e";
+      context.fillStyle = showAsActive ? accentColor : "#aaa69e";
       context.font = "900 27px sans-serif";
       context.textAlign = "center";
       context.fillText(
         item.name[0],
         x + cardWidth / 2,
-        y + (imageMode === "duplicates" ? 96 : 57),
+        y + (isListMode ? 96 : 57),
       );
     }
 
     context.textAlign = "center";
-    context.fillStyle = isOwned ? "#191918" : "#8d8981";
-    context.font = `800 ${imageMode === "duplicates" ? 25 : 18}px sans-serif`;
+    context.fillStyle = showAsActive ? "#191918" : "#8d8981";
+    context.font = `800 ${isListMode ? 25 : 18}px sans-serif`;
     context.fillText(
       item.name,
       x + cardWidth / 2,
-      y + (imageMode === "duplicates" ? 192 : 105),
+      y + (isListMode ? 192 : 105),
     );
     context.textAlign = "left";
 
@@ -357,20 +378,20 @@ async function drawCollectionImage(includeArtwork = true) {
       context.fillStyle = "#191918";
       context.beginPath();
       context.arc(
-        x + cardWidth - (imageMode === "duplicates" ? 30 : 18),
-        y + (imageMode === "duplicates" ? 30 : 18),
-        imageMode === "duplicates" ? 25 : 16,
+        x + cardWidth - (isListMode ? 30 : 18),
+        y + (isListMode ? 30 : 18),
+        isListMode ? 25 : 16,
         0,
         Math.PI * 2,
       );
       context.fill();
       context.fillStyle = "#ffffff";
-      context.font = `800 ${imageMode === "duplicates" ? 21 : 15}px sans-serif`;
+      context.font = `800 ${isListMode ? 21 : 15}px sans-serif`;
       context.textAlign = "center";
       context.fillText(
         `×${count}`,
-        x + cardWidth - (imageMode === "duplicates" ? 30 : 18),
-        y + (imageMode === "duplicates" ? 37 : 23),
+        x + cardWidth - (isListMode ? 30 : 18),
+        y + (isListMode ? 37 : 23),
       );
       context.textAlign = "left";
     }
@@ -381,6 +402,8 @@ async function drawCollectionImage(includeArtwork = true) {
   context.fillText(
     imageMode === "duplicates"
       ? "씰도감 · 중복 씰 교환용 목록"
+      : imageMode === "missing"
+        ? "씰도감 · 아직 필요한 씰 목록"
       : "씰도감 · 브라우저에 저장된 나의 수집 기록",
     66,
     canvas.height - 40,
@@ -452,6 +475,8 @@ elements.imageModeTabs.addEventListener("click", async (event) => {
   elements.shareStatus.textContent =
     imageMode === "duplicates" && !pokemon.some((item) => state.counts[item.id] > 1)
       ? "아직 중복으로 가진 씰이 없어요."
+      : imageMode === "missing" && !pokemon.some((item) => state.counts[item.id] === 0)
+        ? "전부 모았어요! 없는 씰이 없어요."
       : "이미지가 준비됐어요.";
 });
 
@@ -464,7 +489,11 @@ elements.saveImageButton.addEventListener("click", async () => {
     const link = document.createElement("a");
     link.href = downloadUrl;
     const fileName =
-      imageMode === "duplicates" ? "나의-중복-띠부씰" : "나의-띠부씰-도감";
+      imageMode === "duplicates"
+        ? "나의-중복-띠부씰"
+        : imageMode === "missing"
+          ? "나의-없는-띠부씰"
+          : "나의-띠부씰-도감";
     link.download = `${fileName}-${new Date().toISOString().slice(0, 10)}.png`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
