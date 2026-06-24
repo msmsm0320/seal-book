@@ -156,6 +156,8 @@ h1 em {
 }
 
 .progress-card {
+  align-self: start;
+  transform: translateY(-24px);
   padding: 32px;
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 28px;
@@ -909,6 +911,7 @@ dialog::backdrop {
 
   .progress-card {
     max-width: 600px;
+    transform: none;
   }
 
   .sticker-grid {
