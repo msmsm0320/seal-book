@@ -71,6 +71,8 @@ const elements = {
   importPreview: document.querySelector("#importPreview"),
   importPreviewStats: document.querySelector("#importPreviewStats"),
   importPreviewCanvas: document.querySelector("#importPreviewCanvas"),
+  importPreviewZoomRange: document.querySelector("#importPreviewZoomRange"),
+  importPreviewZoomValue: document.querySelector("#importPreviewZoomValue"),
   importPreviewChanges: document.querySelector("#importPreviewChanges"),
   applyImportButton: document.querySelector("#applyImportButton"),
   cancelImportButton: document.querySelector("#cancelImportButton"),
@@ -87,12 +89,19 @@ const elements = {
 
 let imageMode = "all";
 let previewZoom = 100;
+let importPreviewZoom = 100;
 let pendingImportCounts = null;
 
 function updatePreviewZoom() {
   elements.collectionCanvas.style.width = `${previewZoom}%`;
   elements.previewZoomRange.value = String(previewZoom);
   elements.previewZoomValue.textContent = `${previewZoom}%`;
+}
+
+function updateImportPreviewZoom() {
+  elements.importPreviewCanvas.style.width = `${importPreviewZoom}%`;
+  elements.importPreviewZoomRange.value = String(importPreviewZoom);
+  elements.importPreviewZoomValue.textContent = `${importPreviewZoom}%`;
 }
 
 function encodeBase64Url(text) {
@@ -308,6 +317,7 @@ async function renderImportPreview(nextCounts) {
           changed.length > changedNames.length ? "…" : ""
         }`;
   elements.importPreview.hidden = false;
+  updateImportPreviewZoom();
   elements.codeStatus.textContent = "이미지 미리보기를 만드는 중이에요…";
   await drawImportPreviewCanvas(nextCounts, true);
   elements.codeStatus.textContent = "미리보기를 확인한 뒤 적용하거나 취소해 주세요.";
@@ -912,6 +922,11 @@ elements.importCodeButton.addEventListener("click", async () => {
     console.error(error);
     hideImportPreview("코드를 읽지 못했어요. 복사한 내용을 다시 확인해 주세요.");
   }
+});
+
+elements.importPreviewZoomRange.addEventListener("input", (event) => {
+  importPreviewZoom = Number(event.target.value);
+  updateImportPreviewZoom();
 });
 
 elements.applyImportButton.addEventListener("click", () => {

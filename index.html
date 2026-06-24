@@ -169,6 +169,18 @@
           <div class="import-preview" id="importPreview" hidden>
             <h3>변경 미리보기</h3>
             <div class="import-preview-stats" id="importPreviewStats"></div>
+            <div class="import-preview-zoom-control" aria-label="코드 적용 미리보기 확대">
+              <label for="importPreviewZoomRange">이미지 확대</label>
+              <input
+                id="importPreviewZoomRange"
+                type="range"
+                min="100"
+                max="250"
+                step="25"
+                value="100"
+              />
+              <strong id="importPreviewZoomValue">100%</strong>
+            </div>
             <div class="import-preview-image">
               <canvas id="importPreviewCanvas" width="1200" height="980"></canvas>
             </div>

@@ -693,6 +693,19 @@ dialog::backdrop {
   border-top: 1px solid var(--line);
 }
 
+.code-dialog-card .button-ghost,
+.code-import .button-ghost {
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink);
+}
+
+.code-dialog-card .button-ghost:hover,
+.code-import .button-ghost:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
 .import-preview {
   margin-top: 16px;
   padding: 16px;
@@ -732,6 +745,32 @@ dialog::backdrop {
   margin-top: 4px;
   color: var(--ink);
   font-size: 14px;
+}
+
+.import-preview-zoom-control {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.import-preview-zoom-control input {
+  width: 100%;
+  accent-color: var(--orange);
+}
+
+.import-preview-zoom-control strong {
+  min-width: 46px;
+  text-align: right;
+  color: var(--orange);
 }
 
 .import-preview-image {
@@ -909,6 +948,15 @@ dialog::backdrop {
   }
 
   .preview-zoom-control input {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .import-preview-zoom-control {
+    grid-template-columns: 1fr auto;
+  }
+
+  .import-preview-zoom-control input {
     grid-column: 1 / -1;
     order: 3;
   }
