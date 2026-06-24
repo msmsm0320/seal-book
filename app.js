@@ -70,6 +70,7 @@ const elements = {
   importCodeButton: document.querySelector("#importCodeButton"),
   importPreview: document.querySelector("#importPreview"),
   importPreviewStats: document.querySelector("#importPreviewStats"),
+  importPreviewCanvas: document.querySelector("#importPreviewCanvas"),
   importPreviewChanges: document.querySelector("#importPreviewChanges"),
   applyImportButton: document.querySelector("#applyImportButton"),
   cancelImportButton: document.querySelector("#cancelImportButton"),
@@ -170,10 +171,116 @@ function hideImportPreview(message = "코드가 준비됐어요.") {
   elements.importPreview.hidden = true;
   elements.importPreviewStats.replaceChildren();
   elements.importPreviewChanges.textContent = "";
+  elements.importPreviewCanvas.getContext("2d").clearRect(
+    0,
+    0,
+    elements.importPreviewCanvas.width,
+    elements.importPreviewCanvas.height,
+  );
   elements.codeStatus.textContent = message;
 }
 
-function renderImportPreview(nextCounts) {
+async function drawImportPreviewCanvas(nextCounts, includeArtwork = true) {
+  const canvas = elements.importPreviewCanvas;
+  const context = canvas.getContext("2d");
+  const stats = getCollectionStats(nextCounts);
+  const columns = 10;
+  const cardWidth = 104;
+  const cardHeight = 78;
+  const gap = 10;
+  const startX = 58;
+  const startY = 178;
+
+  canvas.width = 1200;
+  canvas.height = 980;
+
+  const artworks = includeArtwork
+    ? await Promise.all(
+        pokemon.map((item, index) =>
+          loadArtwork(window.STICKER_DATA_URLS?.[index] || item.image),
+        ),
+      )
+    : pokemon.map(() => null);
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#f7f5ef";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#3564d8";
+  context.fillRect(0, 0, canvas.width, 140);
+
+  context.fillStyle = "#ffffff";
+  context.font = "900 46px sans-serif";
+  context.fillText("적용 후 도감 미리보기", 48, 64);
+  context.font = "700 22px sans-serif";
+  context.fillStyle = "rgba(255,255,255,.88)";
+  context.fillText(
+    `보유 ${stats.owned}종 · 미보유 ${stats.missing}종 · 중복 ${stats.duplicates}장`,
+    50,
+    104,
+  );
+
+  pokemon.forEach((item, index) => {
+    const count = nextCounts[item.id] || 0;
+    const isOwned = count > 0;
+    const isChanged = (state.counts[item.id] || 0) !== count;
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    const x = startX + column * (cardWidth + gap);
+    const y = startY + row * (cardHeight + gap);
+    const artwork = artworks[index];
+
+    context.fillStyle = isOwned ? "#ffffff" : "#e7e4dc";
+    roundedRect(context, x, y, cardWidth, cardHeight, 10);
+
+    if (isChanged) {
+      context.strokeStyle = "#3564d8";
+      context.lineWidth = 4;
+      context.strokeRect(x + 2, y + 2, cardWidth - 4, cardHeight - 4);
+    } else if (isOwned) {
+      context.strokeStyle = "#ff5b32";
+      context.lineWidth = 2;
+      context.strokeRect(x + 1, y + 1, cardWidth - 2, cardHeight - 2);
+    }
+
+    if (artwork) {
+      context.save();
+      context.filter = isOwned ? "none" : "grayscale(1) opacity(.33)";
+      context.drawImage(artwork, x + 32, y + 5, 40, 40);
+      context.restore();
+    } else {
+      context.fillStyle = isOwned ? "#ffede8" : "#d6d2c9";
+      context.beginPath();
+      context.arc(x + cardWidth / 2, y + 26, 18, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = isOwned ? "#ff5b32" : "#aaa69e";
+      context.font = "900 15px sans-serif";
+      context.textAlign = "center";
+      context.fillText(item.name[0], x + cardWidth / 2, y + 31);
+    }
+
+    context.fillStyle = isOwned ? "#191918" : "#8d8981";
+    context.font = "800 12px sans-serif";
+    context.textAlign = "center";
+    context.fillText(item.name, x + cardWidth / 2, y + 65);
+
+    if (count > 1) {
+      context.fillStyle = "#191918";
+      context.beginPath();
+      context.arc(x + cardWidth - 15, y + 15, 14, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = "#ffffff";
+      context.font = "800 11px sans-serif";
+      context.fillText(`×${count}`, x + cardWidth - 15, y + 19);
+    }
+    context.textAlign = "left";
+  });
+
+  context.fillStyle = "#77736b";
+  context.font = "600 17px sans-serif";
+  context.fillText("파란 테두리는 현재 도감과 달라지는 씰이에요.", 50, 940);
+}
+
+async function renderImportPreview(nextCounts) {
   const current = getCollectionStats(state.counts);
   const next = getCollectionStats(nextCounts);
   const changed = getChangedPokemon(nextCounts);
@@ -201,6 +308,8 @@ function renderImportPreview(nextCounts) {
           changed.length > changedNames.length ? "…" : ""
         }`;
   elements.importPreview.hidden = false;
+  elements.codeStatus.textContent = "이미지 미리보기를 만드는 중이에요…";
+  await drawImportPreviewCanvas(nextCounts, true);
   elements.codeStatus.textContent = "미리보기를 확인한 뒤 적용하거나 취소해 주세요.";
 }
 
@@ -795,10 +904,10 @@ elements.copyCodeButton.addEventListener("click", async () => {
   }
 });
 
-elements.importCodeButton.addEventListener("click", () => {
+elements.importCodeButton.addEventListener("click", async () => {
   try {
     pendingImportCounts = parseCollectionCode(elements.collectionCodeInput.value);
-    renderImportPreview(pendingImportCounts);
+    await renderImportPreview(pendingImportCounts);
   } catch (error) {
     console.error(error);
     hideImportPreview("코드를 읽지 못했어요. 복사한 내용을 다시 확인해 주세요.");

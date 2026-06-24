@@ -734,6 +734,21 @@ dialog::backdrop {
   font-size: 14px;
 }
 
+.import-preview-image {
+  max-height: 340px;
+  margin-top: 12px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f1efe8;
+}
+
+.import-preview-image canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .import-preview p {
   margin: 12px 0 0;
   color: var(--muted);
