@@ -40,11 +40,14 @@ const pokemon = [
 }));
 
 const STORAGE_KEY = "seal-book-collection-v1";
+const PACK_PRICE_KEY = "seal-book-pack-price-v1";
+const DEFAULT_PACK_PRICE = 2000;
 const state = {
   counts: Object.fromEntries(pokemon.map(({ id }) => [id, 0])),
   filter: "all",
   search: "",
   sort: "number",
+  packPrice: DEFAULT_PACK_PRICE,
 };
 
 const elements = {
@@ -59,6 +62,14 @@ const elements = {
   owned: document.querySelector("#ownedStat"),
   missing: document.querySelector("#missingStat"),
   duplicate: document.querySelector("#duplicateStat"),
+  packPriceInput: document.querySelector("#packPriceInput"),
+  expectedTotalCost: document.querySelector("#expectedTotalCost"),
+  expectedTotalPacks: document.querySelector("#expectedTotalPacks"),
+  spentCost: document.querySelector("#spentCost"),
+  spentPacks: document.querySelector("#spentPacks"),
+  remainingCost: document.querySelector("#remainingCost"),
+  remainingPacks: document.querySelector("#remainingPacks"),
+  costNote: document.querySelector("#costNote"),
   summary: document.querySelector("#resultSummary"),
   shareButton: document.querySelector("#shareButton"),
   shareDialog: document.querySelector("#shareDialog"),
@@ -169,6 +180,22 @@ function getCollectionStats(counts) {
     missing: pokemon.length - owned,
     duplicates,
   };
+}
+
+function harmonicNumber(count) {
+  let total = 0;
+  for (let index = 1; index <= count; index += 1) {
+    total += 1 / index;
+  }
+  return total;
+}
+
+function formatWon(value) {
+  return `${Math.round(value).toLocaleString("ko-KR")}원`;
+}
+
+function formatPacks(value) {
+  return `${Math.ceil(value).toLocaleString("ko-KR")}개`;
 }
 
 function getChangedPokemon(nextCounts) {
@@ -368,17 +395,27 @@ function loadCollection() {
 
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!saved) return;
-    pokemon.forEach(({ id }) => {
-      state.counts[id] = Math.max(0, Number(saved[id]) || 0);
-    });
+    if (saved) {
+      pokemon.forEach(({ id }) => {
+        state.counts[id] = Math.max(0, Number(saved[id]) || 0);
+      });
+    }
   } catch (error) {
     console.warn("저장된 데이터를 읽지 못했습니다.", error);
+  }
+
+  const savedPackPrice = Number(localStorage.getItem(PACK_PRICE_KEY));
+  if (Number.isFinite(savedPackPrice) && savedPackPrice >= 0) {
+    state.packPrice = savedPackPrice;
   }
 }
 
 function saveCollection() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.counts));
+}
+
+function savePackPrice() {
+  localStorage.setItem(PACK_PRICE_KEY, String(state.packPrice));
 }
 
 function getVisiblePokemon() {
@@ -457,13 +494,32 @@ function renderStats() {
   const counts = Object.values(state.counts);
   const owned = counts.filter((count) => count > 0).length;
   const duplicates = counts.reduce((sum, count) => sum + Math.max(0, count - 1), 0);
+  const totalPacks = counts.reduce((sum, count) => sum + count, 0);
   const percent = Math.round((owned / pokemon.length) * 100);
+  const fullExpectedPacks = pokemon.length * harmonicNumber(pokemon.length);
+  const remainingExpectedPacks =
+    owned >= pokemon.length
+      ? 0
+      : pokemon.length * (harmonicNumber(pokemon.length) - harmonicNumber(owned));
+  const price = Math.max(0, Number(state.packPrice) || 0);
 
   elements.owned.textContent = owned;
   elements.missing.textContent = pokemon.length - owned;
   elements.duplicate.textContent = duplicates;
   elements.progressPercent.textContent = `${percent}%`;
   elements.progressFill.style.width = `${percent}%`;
+  elements.packPriceInput.value = String(price);
+  elements.expectedTotalCost.textContent = formatWon(fullExpectedPacks * price);
+  elements.expectedTotalPacks.textContent = `평균 ${formatPacks(fullExpectedPacks)}`;
+  elements.spentCost.textContent = formatWon(totalPacks * price);
+  elements.spentPacks.textContent = `기록 ${totalPacks.toLocaleString("ko-KR")}개`;
+  elements.remainingCost.textContent = formatWon(remainingExpectedPacks * price);
+  elements.remainingPacks.textContent =
+    owned >= pokemon.length ? "컴플리트!" : `평균 ${formatPacks(remainingExpectedPacks)}`;
+  elements.costNote.textContent =
+    owned >= pokemon.length
+      ? "축하해요. 계산상 앞으로 필요한 평균 비용은 0원이에요."
+      : "실제 봉입률, 교환, 중고 구매 여부에 따라 달라질 수 있는 재미용 추정치예요.";
 }
 
 function render() {
@@ -878,6 +934,12 @@ elements.search.addEventListener("input", (event) => {
 elements.sort.addEventListener("change", (event) => {
   state.sort = event.target.value;
   renderCards();
+});
+
+elements.packPriceInput.addEventListener("input", (event) => {
+  state.packPrice = Math.max(0, Number(event.target.value) || 0);
+  savePackPrice();
+  renderStats();
 });
 
 elements.shareButton.addEventListener("click", async () => {

@@ -54,6 +54,43 @@
             <div><strong id="missingStat">100</strong><span>남았어요</span></div>
             <div><strong id="duplicateStat">0</strong><span>중복 씰</span></div>
           </div>
+          <div class="cost-card" aria-label="수집 비용 계산기">
+            <div class="cost-header">
+              <div>
+                <span>수집 비용 계산기</span>
+                <small>100종 동일 확률 기준 평균값</small>
+              </div>
+              <label>
+                1개 가격
+                <input
+                  id="packPriceInput"
+                  type="number"
+                  min="0"
+                  step="100"
+                  inputmode="numeric"
+                  value="2000"
+                />
+              </label>
+            </div>
+            <div class="cost-grid">
+              <div>
+                <span>완성 평균</span>
+                <strong id="expectedTotalCost">0원</strong>
+                <small id="expectedTotalPacks">평균 0개</small>
+              </div>
+              <div>
+                <span>현재 기록상 지출</span>
+                <strong id="spentCost">0원</strong>
+                <small id="spentPacks">기록 0개</small>
+              </div>
+              <div>
+                <span>앞으로 평균</span>
+                <strong id="remainingCost">0원</strong>
+                <small id="remainingPacks">평균 0개</small>
+              </div>
+            </div>
+            <p id="costNote">확률이 균등하다고 가정한 재미용 추정치예요.</p>
+          </div>
         </div>
       </div>
       <div class="hero-shape hero-shape-one" aria-hidden="true"></div>

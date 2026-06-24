@@ -221,6 +221,87 @@ h1 em {
   font-size: 12px;
 }
 
+.cost-card {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.cost-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.cost-header span,
+.cost-grid span {
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.cost-header small,
+.cost-grid small,
+.cost-card p {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+}
+
+.cost-header label {
+  display: grid;
+  gap: 6px;
+  min-width: 132px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cost-header input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 11px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--white);
+  font-weight: 900;
+}
+
+.cost-header input:focus {
+  outline: 3px solid rgba(255, 216, 77, 0.24);
+}
+
+.cost-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.cost-grid > div {
+  padding: 14px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.cost-grid strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--yellow);
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.cost-grid small {
+  display: block;
+  margin-top: 5px;
+}
+
+.cost-card p {
+  margin: 12px 0 0;
+  line-height: 1.5;
+}
+
 .hero-shape {
   position: absolute;
   border: 2px solid rgba(255, 255, 255, 0.1);
@@ -875,6 +956,19 @@ dialog::backdrop {
 
   .progress-card {
     padding: 25px 20px;
+  }
+
+  .cost-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cost-header label {
+    min-width: 0;
+  }
+
+  .cost-grid {
+    grid-template-columns: 1fr;
   }
 
   .main-content {
