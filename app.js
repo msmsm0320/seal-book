@@ -62,6 +62,13 @@ const elements = {
   summary: document.querySelector("#resultSummary"),
   shareButton: document.querySelector("#shareButton"),
   shareDialog: document.querySelector("#shareDialog"),
+  codeButton: document.querySelector("#codeButton"),
+  codeDialog: document.querySelector("#codeDialog"),
+  collectionCodeOutput: document.querySelector("#collectionCodeOutput"),
+  collectionCodeInput: document.querySelector("#collectionCodeInput"),
+  copyCodeButton: document.querySelector("#copyCodeButton"),
+  importCodeButton: document.querySelector("#importCodeButton"),
+  codeStatus: document.querySelector("#codeStatus"),
   collectionCanvas: document.querySelector("#collectionCanvas"),
   imageModeTabs: document.querySelector("#imageModeTabs"),
   shareStatus: document.querySelector("#shareStatus"),
@@ -72,15 +79,89 @@ const elements = {
 
 let imageMode = "all";
 
+function encodeBase64Url(text) {
+  return btoa(text).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+function decodeBase64Url(text) {
+  const normalized = text.replaceAll("-", "+").replaceAll("_", "/");
+  const padding = "=".repeat((4 - (normalized.length % 4)) % 4);
+  return atob(normalized + padding);
+}
+
+function createCollectionCode() {
+  const payload = {
+    v: 1,
+    c: pokemon.map(({ id }) => Math.min(99, Math.max(0, Number(state.counts[id]) || 0))),
+  };
+  return `SEALBOOK1:${encodeBase64Url(JSON.stringify(payload))}`;
+}
+
+function parseCollectionCode(rawCode) {
+  const raw = rawCode.trim();
+  const code = raw.includes("collection=")
+    ? new URL(raw).searchParams.get("collection")
+    : raw;
+  const body = code.startsWith("SEALBOOK1:") ? code.slice("SEALBOOK1:".length) : code;
+
+  try {
+    const parsed = JSON.parse(decodeBase64Url(body));
+    if (Array.isArray(parsed.c)) {
+      return Object.fromEntries(
+        pokemon.map(({ id }, index) => [id, Math.max(0, Number(parsed.c[index]) || 0)]),
+      );
+    }
+    return Object.fromEntries(
+      pokemon.map(({ id }) => [id, Math.max(0, Number(parsed[id]) || 0)]),
+    );
+  } catch (error) {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(escape(atob(body))));
+      return Object.fromEntries(
+        pokemon.map(({ id }) => [id, Math.max(0, Number(parsed[id]) || 0)]),
+      );
+    } catch {
+      throw error;
+    }
+  }
+}
+
+function refreshCollectionCode() {
+  elements.collectionCodeOutput.value = createCollectionCode();
+}
+
+function applyCollectionCode(code) {
+  const nextCounts = parseCollectionCode(code);
+  pokemon.forEach(({ id }) => {
+    state.counts[id] = nextCounts[id] || 0;
+  });
+  saveCollection();
+  render();
+  refreshCollectionCode();
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
 function loadCollection() {
   const shared = new URLSearchParams(location.search).get("collection");
   if (shared) {
     try {
-      const decoded = JSON.parse(decodeURIComponent(escape(atob(shared))));
-      pokemon.forEach(({ id }) => {
-        state.counts[id] = Math.max(0, Number(decoded[id]) || 0);
-      });
-      saveCollection();
+      applyCollectionCode(shared);
       history.replaceState({}, "", location.pathname);
       showToast("공유받은 컬렉션을 불러왔어요.");
       return;
@@ -133,6 +214,7 @@ function changeCount(id, nextCount) {
   state.counts[id] = Math.max(0, nextCount);
   saveCollection();
   render();
+  if (elements.codeDialog.open) refreshCollectionCode();
 }
 
 function renderCards() {
@@ -461,6 +543,37 @@ elements.shareButton.addEventListener("click", async () => {
   elements.shareStatus.textContent = "이미지가 준비됐어요.";
 });
 
+elements.codeButton.addEventListener("click", () => {
+  refreshCollectionCode();
+  elements.codeStatus.textContent = "코드가 준비됐어요.";
+  elements.codeDialog.showModal();
+  elements.collectionCodeOutput.select();
+});
+
+elements.copyCodeButton.addEventListener("click", async () => {
+  refreshCollectionCode();
+  try {
+    await copyText(elements.collectionCodeOutput.value);
+    elements.codeStatus.textContent = "도감 코드를 복사했어요.";
+    showToast("도감 코드를 복사했어요!");
+  } catch (error) {
+    console.error(error);
+    elements.codeStatus.textContent = "복사에 실패했어요. 코드를 직접 선택해서 복사해 주세요.";
+  }
+});
+
+elements.importCodeButton.addEventListener("click", () => {
+  try {
+    applyCollectionCode(elements.collectionCodeInput.value);
+    elements.collectionCodeInput.value = "";
+    elements.codeStatus.textContent = "도감 코드를 불러왔어요.";
+    showToast("도감 코드를 불러왔어요!");
+  } catch (error) {
+    console.error(error);
+    elements.codeStatus.textContent = "코드를 읽지 못했어요. 복사한 내용을 다시 확인해 주세요.";
+  }
+});
+
 elements.imageModeTabs.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-image-mode]");
   if (!button || button.dataset.imageMode === imageMode) return;
@@ -519,6 +632,10 @@ elements.resetButton.addEventListener("click", () => {
 
 elements.shareDialog.addEventListener("click", (event) => {
   if (event.target === elements.shareDialog) elements.shareDialog.close();
+});
+
+elements.codeDialog.addEventListener("click", (event) => {
+  if (event.target === elements.codeDialog) elements.codeDialog.close();
 });
 
 loadCollection();

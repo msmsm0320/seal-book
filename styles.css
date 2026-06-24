@@ -82,6 +82,8 @@ button {
 
 .nav-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
 }
 
@@ -572,7 +574,7 @@ dialog::backdrop {
 
 .image-mode-tabs {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-top: 20px;
   padding: 5px;
@@ -622,6 +624,49 @@ dialog::backdrop {
   font-size: 11px;
 }
 
+.code-dialog-card {
+  text-align: left;
+}
+
+.code-dialog-card .dialog-icon,
+.code-dialog-card h2,
+.code-dialog-card > p,
+.code-dialog-card .share-status {
+  text-align: center;
+}
+
+.code-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.code-field textarea {
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  background: #fffaf2;
+  color: var(--ink);
+  font: 700 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+
+.code-field textarea:focus {
+  outline: 3px solid rgba(255, 91, 50, 0.18);
+  border-color: var(--orange);
+}
+
+.code-import {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -661,11 +706,19 @@ dialog::backdrop {
   }
 
   .nav {
+    align-items: flex-start;
+    gap: 14px;
     min-height: 70px;
+    padding-block: 16px;
+  }
+
+  .nav-actions {
+    max-width: 210px;
   }
 
   .button {
     padding-inline: 13px;
+    font-size: 13px;
   }
 
   #resetButton {
