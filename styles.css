@@ -598,6 +598,32 @@ dialog::backdrop {
   color: var(--orange);
 }
 
+.preview-zoom-control {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffaf2;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.preview-zoom-control input {
+  width: 100%;
+  accent-color: var(--orange);
+}
+
+.preview-zoom-control strong {
+  min-width: 46px;
+  text-align: right;
+  color: var(--orange);
+}
+
 .collection-preview canvas {
   display: block;
   width: 100%;
@@ -801,6 +827,15 @@ dialog::backdrop {
 
   .image-mode-tabs {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .preview-zoom-control {
+    grid-template-columns: 1fr auto;
+  }
+
+  .preview-zoom-control input {
+    grid-column: 1 / -1;
+    order: 3;
   }
 }
 

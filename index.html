@@ -116,6 +116,18 @@
           <button class="image-mode" data-image-mode="missing" type="button">없는 씰만</button>
           <button class="image-mode" data-image-mode="trade" type="button">교환 요약</button>
         </div>
+        <div class="preview-zoom-control" aria-label="이미지 미리보기 확대">
+          <label for="previewZoomRange">미리보기 확대</label>
+          <input
+            id="previewZoomRange"
+            type="range"
+            min="100"
+            max="250"
+            step="25"
+            value="100"
+          />
+          <strong id="previewZoomValue">100%</strong>
+        </div>
         <div class="collection-preview">
           <canvas id="collectionCanvas" width="1800" height="1740"></canvas>
         </div>

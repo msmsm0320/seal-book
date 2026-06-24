@@ -71,6 +71,8 @@ const elements = {
   codeStatus: document.querySelector("#codeStatus"),
   collectionCanvas: document.querySelector("#collectionCanvas"),
   imageModeTabs: document.querySelector("#imageModeTabs"),
+  previewZoomRange: document.querySelector("#previewZoomRange"),
+  previewZoomValue: document.querySelector("#previewZoomValue"),
   shareStatus: document.querySelector("#shareStatus"),
   saveImageButton: document.querySelector("#saveImageButton"),
   resetButton: document.querySelector("#resetButton"),
@@ -78,6 +80,13 @@ const elements = {
 };
 
 let imageMode = "all";
+let previewZoom = 100;
+
+function updatePreviewZoom() {
+  elements.collectionCanvas.style.width = `${previewZoom}%`;
+  elements.previewZoomRange.value = String(previewZoom);
+  elements.previewZoomValue.textContent = `${previewZoom}%`;
+}
 
 function encodeBase64Url(text) {
   return btoa(text).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -687,10 +696,16 @@ elements.sort.addEventListener("change", (event) => {
 elements.shareButton.addEventListener("click", async () => {
   elements.shareDialog.showModal();
   elements.saveImageButton.disabled = true;
+  updatePreviewZoom();
   elements.shareStatus.textContent = "이미지를 만드는 중이에요…";
   await drawCollectionImage(true);
   elements.saveImageButton.disabled = false;
   elements.shareStatus.textContent = "이미지가 준비됐어요.";
+});
+
+elements.previewZoomRange.addEventListener("input", (event) => {
+  previewZoom = Number(event.target.value);
+  updatePreviewZoom();
 });
 
 elements.codeButton.addEventListener("click", () => {
