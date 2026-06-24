@@ -68,6 +68,11 @@ const elements = {
   collectionCodeInput: document.querySelector("#collectionCodeInput"),
   copyCodeButton: document.querySelector("#copyCodeButton"),
   importCodeButton: document.querySelector("#importCodeButton"),
+  importPreview: document.querySelector("#importPreview"),
+  importPreviewStats: document.querySelector("#importPreviewStats"),
+  importPreviewChanges: document.querySelector("#importPreviewChanges"),
+  applyImportButton: document.querySelector("#applyImportButton"),
+  cancelImportButton: document.querySelector("#cancelImportButton"),
   codeStatus: document.querySelector("#codeStatus"),
   collectionCanvas: document.querySelector("#collectionCanvas"),
   imageModeTabs: document.querySelector("#imageModeTabs"),
@@ -81,6 +86,7 @@ const elements = {
 
 let imageMode = "all";
 let previewZoom = 100;
+let pendingImportCounts = null;
 
 function updatePreviewZoom() {
   elements.collectionCanvas.style.width = `${previewZoom}%`;
@@ -108,9 +114,14 @@ function createCollectionCode() {
 
 function parseCollectionCode(rawCode) {
   const raw = rawCode.trim();
-  const code = raw.includes("collection=")
-    ? new URL(raw).searchParams.get("collection")
-    : raw;
+  let code = raw;
+  if (raw.includes("collection=")) {
+    try {
+      code = new URL(raw, location.origin).searchParams.get("collection") || raw;
+    } catch {
+      code = new URLSearchParams(raw.replace(/^\?/, "")).get("collection") || raw;
+    }
+  }
   const body = code.startsWith("SEALBOOK1:") ? code.slice("SEALBOOK1:".length) : code;
 
   try {
@@ -139,14 +150,71 @@ function refreshCollectionCode() {
   elements.collectionCodeOutput.value = createCollectionCode();
 }
 
-function applyCollectionCode(code) {
-  const nextCounts = parseCollectionCode(code);
+function getCollectionStats(counts) {
+  const values = pokemon.map(({ id }) => Math.max(0, Number(counts[id]) || 0));
+  const owned = values.filter((count) => count > 0).length;
+  const duplicates = values.reduce((sum, count) => sum + Math.max(0, count - 1), 0);
+  return {
+    owned,
+    missing: pokemon.length - owned,
+    duplicates,
+  };
+}
+
+function getChangedPokemon(nextCounts) {
+  return pokemon.filter(({ id }) => (state.counts[id] || 0) !== (nextCounts[id] || 0));
+}
+
+function hideImportPreview(message = "코드가 준비됐어요.") {
+  pendingImportCounts = null;
+  elements.importPreview.hidden = true;
+  elements.importPreviewStats.replaceChildren();
+  elements.importPreviewChanges.textContent = "";
+  elements.codeStatus.textContent = message;
+}
+
+function renderImportPreview(nextCounts) {
+  const current = getCollectionStats(state.counts);
+  const next = getCollectionStats(nextCounts);
+  const changed = getChangedPokemon(nextCounts);
+  const statItems = [
+    ["보유", current.owned, next.owned, "종"],
+    ["미보유", current.missing, next.missing, "종"],
+    ["중복", current.duplicates, next.duplicates, "장"],
+  ];
+
+  elements.importPreviewStats.replaceChildren(
+    ...statItems.map(([label, before, after, unit]) => {
+      const item = document.createElement("div");
+      item.innerHTML = `<span>${label}</span><strong>${before}${unit} → ${after}${unit}</strong>`;
+      return item;
+    }),
+  );
+
+  const changedNames = changed
+    .slice(0, 10)
+    .map(({ id, name }) => `${name} ${state.counts[id] || 0}장→${nextCounts[id] || 0}장`);
+  elements.importPreviewChanges.textContent =
+    changed.length === 0
+      ? "현재 도감과 같은 코드예요. 적용해도 바뀌는 내용은 없습니다."
+      : `바뀌는 씰 ${changed.length}종: ${changedNames.join(", ")}${
+          changed.length > changedNames.length ? "…" : ""
+        }`;
+  elements.importPreview.hidden = false;
+  elements.codeStatus.textContent = "미리보기를 확인한 뒤 적용하거나 취소해 주세요.";
+}
+
+function applyCollectionCounts(nextCounts) {
   pokemon.forEach(({ id }) => {
     state.counts[id] = nextCounts[id] || 0;
   });
   saveCollection();
   render();
   refreshCollectionCode();
+}
+
+function applyCollectionCode(code) {
+  applyCollectionCounts(parseCollectionCode(code));
 }
 
 async function copyText(text) {
@@ -710,7 +778,7 @@ elements.previewZoomRange.addEventListener("input", (event) => {
 
 elements.codeButton.addEventListener("click", () => {
   refreshCollectionCode();
-  elements.codeStatus.textContent = "코드가 준비됐어요.";
+  hideImportPreview("코드가 준비됐어요.");
   elements.codeDialog.showModal();
   elements.collectionCodeOutput.select();
 });
@@ -729,13 +797,34 @@ elements.copyCodeButton.addEventListener("click", async () => {
 
 elements.importCodeButton.addEventListener("click", () => {
   try {
-    applyCollectionCode(elements.collectionCodeInput.value);
-    elements.collectionCodeInput.value = "";
-    elements.codeStatus.textContent = "도감 코드를 불러왔어요.";
-    showToast("도감 코드를 불러왔어요!");
+    pendingImportCounts = parseCollectionCode(elements.collectionCodeInput.value);
+    renderImportPreview(pendingImportCounts);
   } catch (error) {
     console.error(error);
+    hideImportPreview("코드를 읽지 못했어요. 복사한 내용을 다시 확인해 주세요.");
+  }
+});
+
+elements.applyImportButton.addEventListener("click", () => {
+  if (!pendingImportCounts) {
     elements.codeStatus.textContent = "코드를 읽지 못했어요. 복사한 내용을 다시 확인해 주세요.";
+    return;
+  }
+  applyCollectionCounts(pendingImportCounts);
+  elements.collectionCodeInput.value = "";
+  hideImportPreview("도감 코드 변경을 적용했어요.");
+  showToast("도감 코드 변경을 적용했어요!");
+});
+
+elements.cancelImportButton.addEventListener("click", () => {
+  elements.collectionCodeInput.value = "";
+  hideImportPreview("변경을 취소했어요.");
+  showToast("도감 코드 변경을 취소했어요.");
+});
+
+elements.collectionCodeInput.addEventListener("input", () => {
+  if (!elements.importPreview.hidden) {
+    hideImportPreview("코드를 다시 확인하려면 변경 미리보기를 눌러 주세요.");
   }
 });
 

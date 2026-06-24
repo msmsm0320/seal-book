@@ -164,8 +164,21 @@
             ></textarea>
           </label>
           <button id="importCodeButton" class="button button-ghost save-image-button" type="button">
-            코드 불러오기
+            변경 미리보기
           </button>
+          <div class="import-preview" id="importPreview" hidden>
+            <h3>변경 미리보기</h3>
+            <div class="import-preview-stats" id="importPreviewStats"></div>
+            <p id="importPreviewChanges"></p>
+            <div class="import-preview-actions">
+              <button id="applyImportButton" class="button button-dark" type="button">
+                변경 적용
+              </button>
+              <button id="cancelImportButton" class="button button-ghost" type="button">
+                취소
+              </button>
+            </div>
+          </div>
         </div>
         <p class="share-status" id="codeStatus">코드가 준비됐어요.</p>
       </form>
