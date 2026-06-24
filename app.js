@@ -297,7 +297,157 @@ function loadArtwork(src) {
   });
 }
 
+async function drawTradeSummaryImage(includeArtwork = true) {
+  const canvas = elements.collectionCanvas;
+  const missingPokemon = pokemon.filter((item) => state.counts[item.id] === 0);
+  const duplicatePokemon = pokemon.filter((item) => state.counts[item.id] > 1);
+  const counts = Object.values(state.counts);
+  const owned = counts.filter((count) => count > 0).length;
+  const duplicates = counts.reduce((sum, count) => sum + Math.max(0, count - 1), 0);
+  const columnsPerSection = 4;
+  const cardWidth = 180;
+  const cardHeight = 172;
+  const gap = 16;
+  const missingRows = Math.max(1, Math.ceil(missingPokemon.length / columnsPerSection));
+  const duplicateRows = Math.max(1, Math.ceil(duplicatePokemon.length / columnsPerSection));
+  const rows = Math.max(missingRows, duplicateRows);
+  const startY = 385;
+  const sectionWidth = 800;
+  const sectionGap = 40;
+  const minHeight = 850;
+
+  canvas.width = 1800;
+  canvas.height = Math.max(minHeight, startY + rows * (cardHeight + gap) + 95);
+
+  const context = canvas.getContext("2d");
+  const tradePokemon = [...missingPokemon, ...duplicatePokemon];
+  const artworks = includeArtwork
+    ? await Promise.all(
+        tradePokemon.map((item) => {
+          const originalIndex = pokemon.findIndex(({ id }) => id === item.id);
+          return loadArtwork(window.STICKER_DATA_URLS?.[originalIndex] || item.image);
+        }),
+      )
+    : tradePokemon.map(() => null);
+  const artworkById = new Map(tradePokemon.map((item, index) => [item.id, artworks[index]]));
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#f7f5ef";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  context.fillStyle = "#191918";
+  context.fillRect(0, 0, canvas.width, 270);
+  context.fillStyle = "#ffffff";
+  context.font = "900 72px sans-serif";
+  context.fillText("띠부씰 교환 요약", 80, 105);
+  context.font = "600 30px sans-serif";
+  context.fillStyle = "rgba(255,255,255,.84)";
+  context.fillText("구해요 / 드려요를 한 장으로 공유해요", 82, 158);
+
+  context.fillStyle = "#ffd84d";
+  context.font = "900 62px sans-serif";
+  context.textAlign = "right";
+  context.fillText(`보유 ${owned}종`, 1720, 102);
+  context.font = "700 25px sans-serif";
+  context.fillStyle = "#ffffff";
+  context.fillText(`구해요 ${missingPokemon.length}종  ·  드려요 ${duplicatePokemon.length}종 / ${duplicates}장`, 1720, 153);
+  context.textAlign = "left";
+
+  function drawSectionHeader(label, detail, x, color) {
+    context.fillStyle = color;
+    roundedRect(context, x, 305, sectionWidth, 56, 16);
+    context.fillStyle = "#ffffff";
+    context.font = "900 28px sans-serif";
+    context.fillText(label, x + 28, 342);
+    context.font = "700 20px sans-serif";
+    context.textAlign = "right";
+    context.fillText(detail, x + sectionWidth - 28, 340);
+    context.textAlign = "left";
+  }
+
+  function drawTradeCard(item, index, x, accentColor, mode) {
+    const column = index % columnsPerSection;
+    const row = Math.floor(index / columnsPerSection);
+    const cardX = x + column * (cardWidth + gap);
+    const cardY = startY + row * (cardHeight + gap);
+    const count = state.counts[item.id];
+    const artwork = artworkById.get(item.id);
+
+    context.fillStyle = "#ffffff";
+    roundedRect(context, cardX, cardY, cardWidth, cardHeight, 16);
+    context.strokeStyle = accentColor;
+    context.lineWidth = 3;
+    context.strokeRect(cardX + 1.5, cardY + 1.5, cardWidth - 3, cardHeight - 3);
+
+    if (artwork) {
+      context.drawImage(artwork, cardX + 34, cardY + 10, 112, 112);
+    } else {
+      context.fillStyle = mode === "missing" ? "#edf2ff" : "#ffede8";
+      context.beginPath();
+      context.arc(cardX + cardWidth / 2, cardY + 66, 44, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = accentColor;
+      context.font = "900 26px sans-serif";
+      context.textAlign = "center";
+      context.fillText(item.name[0], cardX + cardWidth / 2, cardY + 76);
+    }
+
+    context.fillStyle = "#191918";
+    context.font = "800 20px sans-serif";
+    context.textAlign = "center";
+    context.fillText(item.name, cardX + cardWidth / 2, cardY + 150);
+
+    if (mode === "duplicate") {
+      context.fillStyle = "#191918";
+      context.beginPath();
+      context.arc(cardX + cardWidth - 24, cardY + 25, 22, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = "#ffffff";
+      context.font = "800 18px sans-serif";
+      context.fillText(`×${count}`, cardX + cardWidth - 24, cardY + 32);
+    }
+
+    context.textAlign = "left";
+  }
+
+  function drawEmptyMessage(message, x) {
+    context.fillStyle = "#e7e4dc";
+    roundedRect(context, x, startY, sectionWidth, 170, 18);
+    context.fillStyle = "#77736b";
+    context.font = "800 30px sans-serif";
+    context.textAlign = "center";
+    context.fillText(message, x + sectionWidth / 2, startY + 94);
+    context.textAlign = "left";
+  }
+
+  const missingX = 70;
+  const duplicateX = missingX + sectionWidth + sectionGap;
+  drawSectionHeader("구해요", `${missingPokemon.length}종`, missingX, "#3564d8");
+  drawSectionHeader("드려요", `${duplicatePokemon.length}종`, duplicateX, "#ff5b32");
+
+  if (missingPokemon.length === 0) {
+    drawEmptyMessage("전부 모았어요!", missingX);
+  } else {
+    missingPokemon.forEach((item, index) => drawTradeCard(item, index, missingX, "#3564d8", "missing"));
+  }
+
+  if (duplicatePokemon.length === 0) {
+    drawEmptyMessage("아직 교환할 중복 씰이 없어요.", duplicateX);
+  } else {
+    duplicatePokemon.forEach((item, index) => drawTradeCard(item, index, duplicateX, "#ff5b32", "duplicate"));
+  }
+
+  context.fillStyle = "#77736b";
+  context.font = "500 20px sans-serif";
+  context.fillText("씰도감 · 교환 매칭용 요약 이미지", 66, canvas.height - 40);
+}
+
 async function drawCollectionImage(includeArtwork = true) {
+  if (imageMode === "trade") {
+    await drawTradeSummaryImage(includeArtwork);
+    return;
+  }
+
   const canvas = elements.collectionCanvas;
   const duplicatePokemon = pokemon.filter((item) => state.counts[item.id] > 1);
   const missingPokemon = pokemon.filter((item) => state.counts[item.id] === 0);
@@ -590,6 +740,8 @@ elements.imageModeTabs.addEventListener("click", async (event) => {
       ? "아직 중복으로 가진 씰이 없어요."
       : imageMode === "missing" && !pokemon.some((item) => state.counts[item.id] === 0)
         ? "전부 모았어요! 없는 씰이 없어요."
+      : imageMode === "trade"
+        ? "교환 요약 이미지가 준비됐어요."
       : "이미지가 준비됐어요.";
 });
 
@@ -606,6 +758,8 @@ elements.saveImageButton.addEventListener("click", async () => {
         ? "나의-중복-띠부씰"
         : imageMode === "missing"
           ? "나의-없는-띠부씰"
+          : imageMode === "trade"
+            ? "나의-띠부씰-교환-요약"
           : "나의-띠부씰-도감";
     link.download = `${fileName}-${new Date().toISOString().slice(0, 10)}.png`;
     link.click();

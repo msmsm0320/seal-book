@@ -574,7 +574,7 @@ dialog::backdrop {
 
 .image-mode-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-top: 20px;
   padding: 5px;
@@ -797,6 +797,10 @@ dialog::backdrop {
 
   .dialog-card {
     padding: 34px 20px 25px;
+  }
+
+  .image-mode-tabs {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
