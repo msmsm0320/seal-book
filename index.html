@@ -153,18 +153,6 @@
           <button class="image-mode" data-image-mode="missing" type="button">없는 씰만</button>
           <button class="image-mode" data-image-mode="trade" type="button">교환 요약</button>
         </div>
-        <div class="preview-zoom-control" aria-label="이미지 미리보기 확대">
-          <label for="previewZoomRange">미리보기 확대</label>
-          <input
-            id="previewZoomRange"
-            type="range"
-            min="100"
-            max="250"
-            step="25"
-            value="100"
-          />
-          <strong id="previewZoomValue">100%</strong>
-        </div>
         <div class="collection-preview">
           <canvas id="collectionCanvas" width="1800" height="1740"></canvas>
         </div>
@@ -212,18 +200,6 @@
             <div class="import-preview" id="importPreview" hidden>
               <h3>변경 미리보기</h3>
               <div class="import-preview-stats" id="importPreviewStats"></div>
-              <div class="import-preview-zoom-control" aria-label="코드 적용 미리보기 확대">
-                <label for="importPreviewZoomRange">이미지 확대</label>
-                <input
-                  id="importPreviewZoomRange"
-                  type="range"
-                  min="100"
-                  max="250"
-                  step="25"
-                  value="100"
-                />
-                <strong id="importPreviewZoomValue">100%</strong>
-              </div>
               <div class="import-preview-image">
                 <canvas id="importPreviewCanvas" width="1200" height="980"></canvas>
               </div>
@@ -276,6 +252,11 @@
         <p class="share-status" id="codeStatus">코드가 준비됐어요.</p>
       </form>
     </dialog>
+
+    <div class="canvas-magnifier" id="canvasMagnifier" hidden>
+      <canvas id="magnifierCanvas" width="260" height="260"></canvas>
+      <span>클릭한 부분 확대</span>
+    </div>
 
     <template id="stickerTemplate">
       <article class="sticker-card">

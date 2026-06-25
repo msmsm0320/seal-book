@@ -83,8 +83,6 @@ const elements = {
   importPreview: document.querySelector("#importPreview"),
   importPreviewStats: document.querySelector("#importPreviewStats"),
   importPreviewCanvas: document.querySelector("#importPreviewCanvas"),
-  importPreviewZoomRange: document.querySelector("#importPreviewZoomRange"),
-  importPreviewZoomValue: document.querySelector("#importPreviewZoomValue"),
   importPreviewChanges: document.querySelector("#importPreviewChanges"),
   applyImportButton: document.querySelector("#applyImportButton"),
   cancelImportButton: document.querySelector("#cancelImportButton"),
@@ -99,30 +97,16 @@ const elements = {
   codeStatus: document.querySelector("#codeStatus"),
   collectionCanvas: document.querySelector("#collectionCanvas"),
   imageModeTabs: document.querySelector("#imageModeTabs"),
-  previewZoomRange: document.querySelector("#previewZoomRange"),
-  previewZoomValue: document.querySelector("#previewZoomValue"),
   shareStatus: document.querySelector("#shareStatus"),
   saveImageButton: document.querySelector("#saveImageButton"),
   resetButton: document.querySelector("#resetButton"),
   toast: document.querySelector("#toast"),
+  canvasMagnifier: document.querySelector("#canvasMagnifier"),
+  magnifierCanvas: document.querySelector("#magnifierCanvas"),
 };
 
 let imageMode = "all";
-let previewZoom = 100;
-let importPreviewZoom = 100;
 let pendingImportCounts = null;
-
-function updatePreviewZoom() {
-  elements.collectionCanvas.style.width = `${previewZoom}%`;
-  elements.previewZoomRange.value = String(previewZoom);
-  elements.previewZoomValue.textContent = `${previewZoom}%`;
-}
-
-function updateImportPreviewZoom() {
-  elements.importPreviewCanvas.style.width = `${importPreviewZoom}%`;
-  elements.importPreviewZoomRange.value = String(importPreviewZoom);
-  elements.importPreviewZoomValue.textContent = `${importPreviewZoom}%`;
-}
 
 function encodeBase64Url(text) {
   return btoa(text).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -205,6 +189,66 @@ function formatWon(value) {
 
 function formatPacks(value) {
   return `${Math.ceil(value).toLocaleString("ko-KR")}개`;
+}
+
+function hideCanvasMagnifier() {
+  elements.canvasMagnifier.hidden = true;
+}
+
+function showCanvasMagnifier(sourceCanvas, event) {
+  const rect = sourceCanvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+  const magnifierHost = sourceCanvas.closest("dialog") || document.body;
+  if (elements.canvasMagnifier.parentElement !== magnifierHost) {
+    magnifierHost.appendChild(elements.canvasMagnifier);
+  }
+
+  const sourceX = ((event.clientX - rect.left) / rect.width) * sourceCanvas.width;
+  const sourceY = ((event.clientY - rect.top) / rect.height) * sourceCanvas.height;
+  const magnifierContext = elements.magnifierCanvas.getContext("2d");
+  const outputSize = elements.magnifierCanvas.width;
+  const sampleSize = Math.min(220, sourceCanvas.width, sourceCanvas.height);
+  const halfSample = sampleSize / 2;
+  const sampleX = Math.max(0, Math.min(sourceCanvas.width - sampleSize, sourceX - halfSample));
+  const sampleY = Math.max(0, Math.min(sourceCanvas.height - sampleSize, sourceY - halfSample));
+
+  magnifierContext.clearRect(0, 0, outputSize, outputSize);
+  magnifierContext.imageSmoothingEnabled = true;
+  magnifierContext.imageSmoothingQuality = "high";
+  magnifierContext.drawImage(
+    sourceCanvas,
+    sampleX,
+    sampleY,
+    sampleSize,
+    sampleSize,
+    0,
+    0,
+    outputSize,
+    outputSize,
+  );
+
+  const margin = 16;
+  const magnifierWidth = 292;
+  const magnifierHeight = 330;
+  let left = event.clientX + 18;
+  let top = event.clientY + 18;
+  if (left + magnifierWidth > window.innerWidth - margin) {
+    left = event.clientX - magnifierWidth - 18;
+  }
+  if (top + magnifierHeight > window.innerHeight - margin) {
+    top = event.clientY - magnifierHeight - 18;
+  }
+
+  elements.canvasMagnifier.style.left = `${Math.max(margin, left)}px`;
+  elements.canvasMagnifier.style.top = `${Math.max(margin, top)}px`;
+  elements.canvasMagnifier.hidden = false;
+}
+
+function enableClickMagnifier(canvas) {
+  canvas.addEventListener("click", (event) => {
+    event.stopPropagation();
+    showCanvasMagnifier(canvas, event);
+  });
 }
 
 function getChangedPokemon(nextCounts) {
@@ -379,7 +423,6 @@ async function renderImportPreview(nextCounts) {
           changed.length > changedNames.length ? "…" : ""
         }`;
   elements.importPreview.hidden = false;
-  updateImportPreviewZoom();
   elements.codeStatus.textContent = "이미지 미리보기를 만드는 중이에요…";
   await drawImportPreviewCanvas(nextCounts, true);
   elements.codeStatus.textContent = "미리보기를 확인한 뒤 적용하거나 취소해 주세요.";
@@ -1177,16 +1220,10 @@ elements.packPriceInput.addEventListener("input", (event) => {
 elements.shareButton.addEventListener("click", async () => {
   elements.shareDialog.showModal();
   elements.saveImageButton.disabled = true;
-  updatePreviewZoom();
   elements.shareStatus.textContent = "이미지를 만드는 중이에요…";
   await drawCollectionImage(true);
   elements.saveImageButton.disabled = false;
   elements.shareStatus.textContent = "이미지가 준비됐어요.";
-});
-
-elements.previewZoomRange.addEventListener("input", (event) => {
-  previewZoom = Number(event.target.value);
-  updatePreviewZoom();
 });
 
 elements.codeButton.addEventListener("click", () => {
@@ -1224,11 +1261,6 @@ elements.importCodeButton.addEventListener("click", async () => {
     console.error(error);
     hideImportPreview("코드를 읽지 못했어요. 복사한 내용을 다시 확인해 주세요.");
   }
-});
-
-elements.importPreviewZoomRange.addEventListener("input", (event) => {
-  importPreviewZoom = Number(event.target.value);
-  updateImportPreviewZoom();
 });
 
 elements.applyImportButton.addEventListener("click", () => {
@@ -1363,12 +1395,24 @@ elements.resetButton.addEventListener("click", () => {
 });
 
 elements.shareDialog.addEventListener("click", (event) => {
-  if (event.target === elements.shareDialog) elements.shareDialog.close();
+  if (event.target === elements.shareDialog) {
+    hideCanvasMagnifier();
+    elements.shareDialog.close();
+  }
 });
 
 elements.codeDialog.addEventListener("click", (event) => {
-  if (event.target === elements.codeDialog) elements.codeDialog.close();
+  if (event.target === elements.codeDialog) {
+    hideCanvasMagnifier();
+    elements.codeDialog.close();
+  }
 });
+
+enableClickMagnifier(elements.collectionCanvas);
+enableClickMagnifier(elements.importPreviewCanvas);
+enableClickMagnifier(elements.compareCanvas);
+document.addEventListener("click", hideCanvasMagnifier);
+window.addEventListener("scroll", hideCanvasMagnifier, true);
 
 loadCollection();
 render();
