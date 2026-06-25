@@ -685,7 +685,7 @@ dialog::backdrop {
   display: block;
   width: 100%;
   height: auto;
-  cursor: zoom-in;
+  cursor: crosshair;
 }
 
 .share-status {
@@ -868,7 +868,7 @@ dialog::backdrop {
   display: block;
   width: 100%;
   height: auto;
-  cursor: zoom-in;
+  cursor: crosshair;
 }
 
 .compare-result > .save-image-button {
@@ -999,7 +999,7 @@ dialog::backdrop {
   display: block;
   width: 100%;
   height: auto;
-  cursor: zoom-in;
+  cursor: crosshair;
 }
 
 .import-preview p {

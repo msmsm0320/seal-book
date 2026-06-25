@@ -244,7 +244,13 @@ function showCanvasMagnifier(sourceCanvas, event) {
   elements.canvasMagnifier.hidden = false;
 }
 
-function enableClickMagnifier(canvas) {
+function enableHoverMagnifier(canvas) {
+  canvas.addEventListener("pointermove", (event) => {
+    event.stopPropagation();
+    showCanvasMagnifier(canvas, event);
+  });
+  canvas.addEventListener("pointerleave", hideCanvasMagnifier);
+  canvas.addEventListener("pointercancel", hideCanvasMagnifier);
   canvas.addEventListener("click", (event) => {
     event.stopPropagation();
     showCanvasMagnifier(canvas, event);
@@ -1408,9 +1414,9 @@ elements.codeDialog.addEventListener("click", (event) => {
   }
 });
 
-enableClickMagnifier(elements.collectionCanvas);
-enableClickMagnifier(elements.importPreviewCanvas);
-enableClickMagnifier(elements.compareCanvas);
+enableHoverMagnifier(elements.collectionCanvas);
+enableHoverMagnifier(elements.importPreviewCanvas);
+enableHoverMagnifier(elements.compareCanvas);
 document.addEventListener("click", hideCanvasMagnifier);
 window.addEventListener("scroll", hideCanvasMagnifier, true);
 
