@@ -229,7 +229,7 @@ function showCanvasMagnifier(sourceCanvas, event) {
 
   const margin = 16;
   const magnifierWidth = 332;
-  const magnifierHeight = 370;
+  const magnifierHeight = 332;
   let left = event.clientX + 18;
   let top = event.clientY + 18;
   if (left + magnifierWidth > window.innerWidth - margin) {
