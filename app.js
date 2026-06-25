@@ -93,6 +93,7 @@ const elements = {
   compareResult: document.querySelector("#compareResult"),
   compareSummary: document.querySelector("#compareSummary"),
   compareCanvas: document.querySelector("#compareCanvas"),
+  saveCompareImageButton: document.querySelector("#saveCompareImageButton"),
   myGiveList: document.querySelector("#myGiveList"),
   friendGiveList: document.querySelector("#friendGiveList"),
   codeStatus: document.querySelector("#codeStatus"),
@@ -1255,6 +1256,7 @@ elements.collectionCodeInput.addEventListener("input", () => {
 
 elements.compareCodeButton.addEventListener("click", async () => {
   try {
+    elements.compareCodeButton.disabled = true;
     const friendCounts = parseCollectionCode(elements.friendCodeInput.value);
     await renderTradeComparison(friendCounts);
     showToast("친구 코드 비교를 완료했어요!");
@@ -1262,6 +1264,34 @@ elements.compareCodeButton.addEventListener("click", async () => {
     console.error(error);
     hideCompareResult();
     elements.codeStatus.textContent = "친구 코드를 읽지 못했어요. 복사한 내용을 다시 확인해 주세요.";
+  } finally {
+    elements.compareCodeButton.disabled = false;
+  }
+});
+
+elements.saveCompareImageButton.addEventListener("click", async () => {
+  if (elements.compareResult.hidden) {
+    elements.codeStatus.textContent = "먼저 친구 코드 비교를 만들어 주세요.";
+    return;
+  }
+
+  elements.saveCompareImageButton.disabled = true;
+  elements.codeStatus.textContent = "비교 이미지를 저장하는 중이에요…";
+  try {
+    const blob = await canvasToBlob(elements.compareCanvas);
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `띠부씰-친구-교환-비교-${new Date().toISOString().slice(0, 10)}.png`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    elements.codeStatus.textContent = "비교 이미지를 저장했어요.";
+    showToast("비교 이미지를 저장했어요!");
+  } catch (error) {
+    console.error(error);
+    elements.codeStatus.textContent = "비교 이미지 저장에 실패했어요.";
+  } finally {
+    elements.saveCompareImageButton.disabled = false;
   }
 });
 
