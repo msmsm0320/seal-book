@@ -698,6 +698,10 @@ dialog::backdrop {
   min-height: 50px;
 }
 
+.save-image-button + .save-image-button {
+  margin-top: 8px;
+}
+
 .save-image-button:disabled {
   cursor: wait;
   opacity: 0.5;

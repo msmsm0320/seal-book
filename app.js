@@ -104,6 +104,7 @@ const elements = {
   imageModeTabs: document.querySelector("#imageModeTabs"),
   shareStatus: document.querySelector("#shareStatus"),
   saveImageButton: document.querySelector("#saveImageButton"),
+  saveKakaoImageButton: document.querySelector("#saveKakaoImageButton"),
   resetButton: document.querySelector("#resetButton"),
   toast: document.querySelector("#toast"),
   canvasMagnifier: document.querySelector("#canvasMagnifier"),
@@ -1385,6 +1386,206 @@ async function drawCollectionImage(includeArtwork = true) {
   );
 }
 
+async function drawKakaoCollectionImage(includeArtwork = true) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const counts = Object.values(state.counts);
+  const owned = counts.filter((count) => count > 0).length;
+  const duplicates = counts.reduce((sum, count) => sum + Math.max(0, count - 1), 0);
+  const percent = Math.round((owned / pokemon.length) * 100);
+  const missingPokemon = pokemon.filter((item) => state.counts[item.id] === 0);
+  const duplicatePokemon = pokemon.filter((item) => state.counts[item.id] > 1);
+  const isTradeMode = imageMode === "trade";
+  const isAllMode = imageMode === "all";
+  const columns = isAllMode ? 4 : 3;
+  const cardWidth = isAllMode ? 166 : 220;
+  const cardHeight = isAllMode ? 138 : 190;
+  const gap = isAllMode ? 14 : 18;
+  const startX = 48;
+  let y = 300;
+
+  const imagePokemon =
+    imageMode === "duplicates"
+      ? duplicatePokemon
+      : imageMode === "missing"
+        ? missingPokemon
+        : pokemon;
+  const rows = isTradeMode
+    ? Math.max(1, Math.ceil(missingPokemon.length / 3)) +
+      Math.max(1, Math.ceil(duplicatePokemon.length / 3))
+    : Math.max(1, Math.ceil(imagePokemon.length / columns));
+
+  canvas.width = 800;
+  canvas.height = Math.max(1200, 320 + rows * (cardHeight + gap) + (isTradeMode ? 320 : 150));
+
+  const artworkPokemon = isTradeMode ? [...missingPokemon, ...duplicatePokemon] : imagePokemon;
+  const artworks = includeArtwork
+    ? await Promise.all(
+        artworkPokemon.map((item) => {
+          const originalIndex = pokemon.findIndex(({ id }) => id === item.id);
+          return loadArtwork(window.STICKER_DATA_URLS?.[originalIndex] || item.image);
+        }),
+      )
+    : artworkPokemon.map(() => null);
+  const artworkById = new Map(artworkPokemon.map((item, index) => [item.id, artworks[index]]));
+
+  const title =
+    imageMode === "duplicates"
+      ? "나의 중복 띠부씰"
+      : imageMode === "missing"
+        ? "아직 없는 띠부씰"
+        : imageMode === "trade"
+          ? "띠부씰 교환 요약"
+          : "나의 띠부씰 도감";
+  const subtitle =
+    imageMode === "duplicates"
+      ? `교환 가능한 중복 ${duplicatePokemon.length}종 · 여분 ${duplicates}장`
+      : imageMode === "missing"
+        ? `아직 필요한 씰 ${missingPokemon.length}종`
+        : imageMode === "trade"
+          ? `구해요 ${missingPokemon.length}종 · 드려요 ${duplicatePokemon.length}종`
+          : `보유 ${owned}종 · 미보유 ${pokemon.length - owned}종 · 중복 ${duplicates}장`;
+  const headerColor =
+    imageMode === "missing" ? "#3564d8" : imageMode === "duplicates" ? "#191918" : "#ff5b32";
+
+  context.fillStyle = "#f7f5ef";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = headerColor;
+  context.fillRect(0, 0, canvas.width, 230);
+  context.fillStyle = "#ffffff";
+  context.font = "900 52px sans-serif";
+  context.fillText(title, 48, 78);
+  context.font = "700 24px sans-serif";
+  context.fillStyle = "rgba(255,255,255,.88)";
+  context.fillText(subtitle, 50, 124);
+  context.fillStyle = "#ffd84d";
+  context.font = "900 42px sans-serif";
+  context.fillText(imageMode === "all" ? `${percent}%` : "공유용", 50, 178);
+
+  function drawSectionTitle(label, count, color) {
+    context.fillStyle = color;
+    roundedRect(context, 48, y, canvas.width - 96, 54, 16);
+    context.fillStyle = "#ffffff";
+    context.font = "900 26px sans-serif";
+    context.fillText(label, 74, y + 36);
+    context.font = "800 20px sans-serif";
+    context.textAlign = "right";
+    context.fillText(`${count}종`, canvas.width - 74, y + 35);
+    context.textAlign = "left";
+    y += 74;
+  }
+
+  function drawEmpty(message) {
+    context.fillStyle = "#e7e4dc";
+    roundedRect(context, 48, y, canvas.width - 96, 150, 18);
+    context.fillStyle = "#77736b";
+    context.font = "800 25px sans-serif";
+    context.textAlign = "center";
+    context.fillText(message, canvas.width / 2, y + 86);
+    context.textAlign = "left";
+    y += 174;
+  }
+
+  function drawCard(item, index, options = {}) {
+    const localColumns = options.columns || columns;
+    const localCardWidth = options.cardWidth || cardWidth;
+    const localCardHeight = options.cardHeight || cardHeight;
+    const localGap = options.gap || gap;
+    const column = index % localColumns;
+    const row = Math.floor(index / localColumns);
+    const x = startX + column * (localCardWidth + localGap);
+    const cardY = y + row * (localCardHeight + localGap);
+    const count = state.counts[item.id] || 0;
+    const isOwned = count > 0;
+    const showAsActive = isOwned || imageMode === "missing" || options.forceActive;
+    const accentColor = options.accentColor || (imageMode === "missing" ? "#3564d8" : "#ff5b32");
+    const artwork = artworkById.get(item.id);
+    const imageSize = isAllMode && !isTradeMode ? 72 : 110;
+    const imageX = x + (localCardWidth - imageSize) / 2;
+
+    context.fillStyle = showAsActive ? "#ffffff" : "#e7e4dc";
+    roundedRect(context, x, cardY, localCardWidth, localCardHeight, 18);
+    if (showAsActive) {
+      context.strokeStyle = accentColor;
+      context.lineWidth = 4;
+      context.strokeRect(x + 2, cardY + 2, localCardWidth - 4, localCardHeight - 4);
+    }
+
+    if (artwork) {
+      context.save();
+      context.filter = showAsActive ? "none" : "grayscale(1) opacity(.33)";
+      context.drawImage(artwork, imageX, cardY + 12, imageSize, imageSize);
+      context.restore();
+    }
+
+    context.fillStyle = showAsActive ? "#191918" : "#8d8981";
+    context.font = `900 ${isAllMode && !isTradeMode ? 18 : 24}px sans-serif`;
+    context.textAlign = "center";
+    context.fillText(item.name, x + localCardWidth / 2, cardY + localCardHeight - 42);
+    if (count > 1 || options.showSpare) {
+      context.fillStyle = "#77736b";
+      context.font = `800 ${isAllMode && !isTradeMode ? 13 : 16}px sans-serif`;
+      context.fillText(
+        options.showSpare ? `여분 ${Math.max(0, count - 1)}장` : `×${count}`,
+        x + localCardWidth / 2,
+        cardY + localCardHeight - 18,
+      );
+    }
+    context.textAlign = "left";
+  }
+
+  function drawCards(items, options = {}) {
+    if (items.length === 0) {
+      drawEmpty(options.emptyMessage || "표시할 씰이 없어요.");
+      return;
+    }
+    items.forEach((item, index) => drawCard(item, index, options));
+    const localColumns = options.columns || columns;
+    const localCardHeight = options.cardHeight || cardHeight;
+    const localGap = options.gap || gap;
+    y += Math.ceil(items.length / localColumns) * (localCardHeight + localGap) + 28;
+  }
+
+  if (isTradeMode) {
+    drawSectionTitle("구해요", missingPokemon.length, "#3564d8");
+    drawCards(missingPokemon, {
+      columns: 3,
+      cardWidth: 220,
+      cardHeight: 190,
+      gap: 18,
+      accentColor: "#3564d8",
+      forceActive: true,
+      emptyMessage: "전부 모았어요!",
+    });
+    drawSectionTitle("드려요", duplicatePokemon.length, "#ff5b32");
+    drawCards(duplicatePokemon, {
+      columns: 3,
+      cardWidth: 220,
+      cardHeight: 190,
+      gap: 18,
+      accentColor: "#ff5b32",
+      forceActive: true,
+      showSpare: true,
+      emptyMessage: "아직 교환할 중복 씰이 없어요.",
+    });
+  } else {
+    drawCards(imagePokemon, {
+      accentColor: imageMode === "missing" ? "#3564d8" : "#ff5b32",
+      forceActive: imageMode === "missing" || imageMode === "duplicates",
+      showSpare: imageMode === "duplicates",
+      emptyMessage:
+        imageMode === "duplicates"
+          ? "아직 중복으로 가진 씰이 없어요."
+          : "전부 모았어요! 없는 씰이 없어요.",
+    });
+  }
+
+  context.fillStyle = "#77736b";
+  context.font = "600 18px sans-serif";
+  context.fillText("씰도감 · 카톡 공유용 이미지", 48, canvas.height - 42);
+  return canvas;
+}
+
 function canvasToBlob(canvas) {
   return new Promise((resolve, reject) => {
     try {
@@ -1628,6 +1829,36 @@ elements.saveImageButton.addEventListener("click", async () => {
     elements.shareStatus.textContent = "이미지 저장에 실패했어요.";
   } finally {
     elements.saveImageButton.disabled = false;
+  }
+});
+
+elements.saveKakaoImageButton.addEventListener("click", async () => {
+  elements.saveKakaoImageButton.disabled = true;
+  elements.shareStatus.textContent = "카톡용 세로 이미지를 저장하는 중이에요…";
+  try {
+    const kakaoCanvas = await drawKakaoCollectionImage(true);
+    const blob = await canvasToBlob(kakaoCanvas);
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    const fileName =
+      imageMode === "duplicates"
+        ? "나의-중복-띠부씰-카톡용"
+        : imageMode === "missing"
+          ? "나의-없는-띠부씰-카톡용"
+          : imageMode === "trade"
+            ? "나의-띠부씰-교환-요약-카톡용"
+          : "나의-띠부씰-도감-카톡용";
+    link.download = `${fileName}-${new Date().toISOString().slice(0, 10)}.png`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    elements.shareStatus.textContent = "카톡용 세로 이미지를 저장했어요.";
+    showToast("카톡용 이미지를 저장했어요!");
+  } catch (error) {
+    console.error(error);
+    elements.shareStatus.textContent = "카톡용 이미지 저장에 실패했어요.";
+  } finally {
+    elements.saveKakaoImageButton.disabled = false;
   }
 });
 
