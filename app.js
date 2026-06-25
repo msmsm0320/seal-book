@@ -144,7 +144,8 @@ function parseCollectionCode(rawCode) {
       code = new URLSearchParams(raw.replace(/^\?/, "")).get("collection") || raw;
     }
   }
-  const body = code.startsWith("SEALBOOK1:") ? code.slice("SEALBOOK1:".length) : code;
+  const prefix = "SEALBOOK1:";
+  const body = code.toUpperCase().startsWith(prefix) ? code.slice(prefix.length) : code;
 
   try {
     const parsed = JSON.parse(decodeBase64Url(body));
