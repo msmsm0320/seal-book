@@ -87,6 +87,12 @@ const elements = {
   importPreviewChanges: document.querySelector("#importPreviewChanges"),
   applyImportButton: document.querySelector("#applyImportButton"),
   cancelImportButton: document.querySelector("#cancelImportButton"),
+  friendCodeInput: document.querySelector("#friendCodeInput"),
+  compareCodeButton: document.querySelector("#compareCodeButton"),
+  compareResult: document.querySelector("#compareResult"),
+  compareSummary: document.querySelector("#compareSummary"),
+  myGiveList: document.querySelector("#myGiveList"),
+  friendGiveList: document.querySelector("#friendGiveList"),
   codeStatus: document.querySelector("#codeStatus"),
   collectionCanvas: document.querySelector("#collectionCanvas"),
   imageModeTabs: document.querySelector("#imageModeTabs"),
@@ -214,6 +220,13 @@ function hideImportPreview(message = "코드가 준비됐어요.") {
     elements.importPreviewCanvas.height,
   );
   elements.codeStatus.textContent = message;
+}
+
+function hideCompareResult() {
+  elements.compareResult.hidden = true;
+  elements.compareSummary.replaceChildren();
+  elements.myGiveList.replaceChildren();
+  elements.friendGiveList.replaceChildren();
 }
 
 async function drawImportPreviewCanvas(nextCounts, includeArtwork = true) {
@@ -361,6 +374,75 @@ function applyCollectionCounts(nextCounts) {
 
 function applyCollectionCode(code) {
   applyCollectionCounts(parseCollectionCode(code));
+}
+
+function getTradeComparison(friendCounts) {
+  const myGive = pokemon.filter(
+    ({ id }) => (state.counts[id] || 0) > 1 && (friendCounts[id] || 0) === 0,
+  );
+  const friendGive = pokemon.filter(
+    ({ id }) => (friendCounts[id] || 0) > 1 && (state.counts[id] || 0) === 0,
+  );
+
+  return {
+    myGive,
+    friendGive,
+    myGain: friendGive.length,
+    friendGain: myGive.length,
+  };
+}
+
+function renderCompareList(container, items, counts, emptyMessage) {
+  if (items.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "compare-empty";
+    empty.textContent = emptyMessage;
+    container.replaceChildren(empty);
+    return;
+  }
+
+  container.replaceChildren(
+    ...items.map((item) => {
+      const row = document.createElement("div");
+      row.className = "compare-item";
+      const spareCount = Math.max(0, (counts[item.id] || 0) - 1);
+      row.innerHTML = `${item.name}<small>교환 가능 여분 ${spareCount}장 · NO.${String(
+        item.id,
+      ).padStart(3, "0")}</small>`;
+      return row;
+    }),
+  );
+}
+
+function renderTradeComparison(friendCounts) {
+  const comparison = getTradeComparison(friendCounts);
+  const summaryItems = [
+    ["내 신규 획득", `+${comparison.myGain}종`],
+    ["친구 신규 획득", `+${comparison.friendGain}종`],
+    ["서로 교환 후보", `${comparison.myGive.length + comparison.friendGive.length}종`],
+  ];
+
+  elements.compareSummary.replaceChildren(
+    ...summaryItems.map(([label, value]) => {
+      const item = document.createElement("div");
+      item.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+      return item;
+    }),
+  );
+  renderCompareList(
+    elements.myGiveList,
+    comparison.myGive,
+    state.counts,
+    "친구에게 줄 수 있는 중복 씰이 없어요.",
+  );
+  renderCompareList(
+    elements.friendGiveList,
+    comparison.friendGive,
+    friendCounts,
+    "친구에게 받을 수 있는 중복 씰이 없어요.",
+  );
+  elements.compareResult.hidden = false;
+  elements.codeStatus.textContent = "친구 코드 비교 결과를 만들었어요.";
 }
 
 async function copyText(text) {
@@ -960,6 +1042,7 @@ elements.previewZoomRange.addEventListener("input", (event) => {
 elements.codeButton.addEventListener("click", () => {
   refreshCollectionCode();
   hideImportPreview("코드가 준비됐어요.");
+  hideCompareResult();
   elements.codeDialog.showModal();
   elements.collectionCodeOutput.select();
 });
@@ -1011,6 +1094,25 @@ elements.cancelImportButton.addEventListener("click", () => {
 elements.collectionCodeInput.addEventListener("input", () => {
   if (!elements.importPreview.hidden) {
     hideImportPreview("코드를 다시 확인하려면 변경 미리보기를 눌러 주세요.");
+  }
+});
+
+elements.compareCodeButton.addEventListener("click", () => {
+  try {
+    const friendCounts = parseCollectionCode(elements.friendCodeInput.value);
+    renderTradeComparison(friendCounts);
+    showToast("친구 코드 비교를 완료했어요!");
+  } catch (error) {
+    console.error(error);
+    hideCompareResult();
+    elements.codeStatus.textContent = "친구 코드를 읽지 못했어요. 복사한 내용을 다시 확인해 주세요.";
+  }
+});
+
+elements.friendCodeInput.addEventListener("input", () => {
+  if (!elements.compareResult.hidden) {
+    hideCompareResult();
+    elements.codeStatus.textContent = "친구 코드를 다시 확인하려면 비교하기를 눌러 주세요.";
   }
 });
 

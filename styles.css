@@ -776,6 +776,12 @@ dialog::backdrop {
   border-top: 1px solid var(--line);
 }
 
+.code-compare {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
 .code-dialog-card .button-ghost,
 .code-import .button-ghost {
   border: 1px solid var(--line);
@@ -795,6 +801,97 @@ dialog::backdrop {
   border: 1px solid rgba(255, 91, 50, 0.28);
   border-radius: 16px;
   background: #fffaf2;
+}
+
+.compare-result {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(53, 100, 216, 0.28);
+  border-radius: 16px;
+  background: #f5f7ff;
+}
+
+.compare-result h3 {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 17px;
+  text-align: center;
+}
+
+.compare-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.compare-summary div {
+  padding: 12px 8px;
+  border-radius: 12px;
+  background: var(--white);
+  text-align: center;
+}
+
+.compare-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.compare-summary strong {
+  display: block;
+  margin-top: 4px;
+  color: #3564d8;
+  font-size: 18px;
+}
+
+.compare-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.compare-columns section {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.compare-columns h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.compare-list {
+  display: grid;
+  gap: 7px;
+  max-height: 210px;
+  overflow: auto;
+}
+
+.compare-item,
+.compare-empty {
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: #fffaf2;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.compare-item small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.compare-empty {
+  color: var(--muted);
+  text-align: center;
 }
 
 .import-preview h3 {
@@ -971,6 +1068,11 @@ dialog::backdrop {
   }
 
   .cost-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-summary,
+  .compare-columns {
     grid-template-columns: 1fr;
   }
 

@@ -232,6 +232,34 @@
             </div>
           </div>
         </div>
+
+        <div class="code-compare">
+          <label class="code-field">
+            <span>친구 코드 비교</span>
+            <textarea
+              id="friendCodeInput"
+              spellcheck="false"
+              placeholder="친구가 보낸 SEALBOOK1:... 코드를 붙여넣기"
+            ></textarea>
+          </label>
+          <button id="compareCodeButton" class="button button-ghost save-image-button" type="button">
+            친구와 비교하기
+          </button>
+          <div class="compare-result" id="compareResult" hidden>
+            <h3>교환 비교 결과</h3>
+            <div class="compare-summary" id="compareSummary"></div>
+            <div class="compare-columns">
+              <section>
+                <h4>내가 줄 수 있어요</h4>
+                <div id="myGiveList" class="compare-list"></div>
+              </section>
+              <section>
+                <h4>친구가 줄 수 있어요</h4>
+                <div id="friendGiveList" class="compare-list"></div>
+              </section>
+            </div>
+          </div>
+        </div>
         <p class="share-status" id="codeStatus">코드가 준비됐어요.</p>
       </form>
     </dialog>
