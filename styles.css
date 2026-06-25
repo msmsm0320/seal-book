@@ -702,6 +702,17 @@ dialog::backdrop {
   margin-top: 8px;
 }
 
+dialog .save-image-button.button-ghost {
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink);
+}
+
+dialog .save-image-button.button-ghost:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
 .save-image-button:disabled {
   cursor: wait;
   opacity: 0.5;
