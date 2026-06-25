@@ -882,6 +882,45 @@ dialog .save-image-button.button-ghost:hover {
   display: block;
 }
 
+.share-qr-panel {
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  text-align: center;
+}
+
+.share-qr-panel h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.share-qr-panel p {
+  margin: 8px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.share-qr-code {
+  display: grid;
+  width: 244px;
+  height: 244px;
+  margin: 0 auto 14px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--white);
+}
+
+.share-qr-code canvas,
+.share-qr-code img {
+  display: block;
+  width: 220px;
+  height: 220px;
+}
+
 .code-field {
   display: grid;
   gap: 8px;

@@ -11,6 +11,10 @@
     <title>씰도감 — 띠부띠부씰 컬렉션</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./assets/sticker-data.js" defer></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+      defer
+    ></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
@@ -216,6 +220,18 @@
           <button id="copyShareLinkButton" class="button button-ghost save-image-button" type="button">
             공유 링크 복사
           </button>
+          <button id="showShareQrButton" class="button button-ghost save-image-button" type="button">
+            공유 QR 만들기
+          </button>
+
+          <div class="share-qr-panel" id="shareQrPanel" hidden>
+            <h3>공유 QR</h3>
+            <p>친구가 카메라로 찍으면 공유 받은 도감 미리보기 화면으로 바로 이동해요.</p>
+            <div class="share-qr-code" id="shareQrCode" aria-label="도감 공유 QR 코드"></div>
+            <button id="saveShareQrButton" class="button button-dark save-image-button" type="button">
+              QR 이미지 저장
+            </button>
+          </div>
 
           <div class="code-import">
             <label class="code-field">

@@ -88,6 +88,10 @@ const elements = {
   collectionCodeInput: document.querySelector("#collectionCodeInput"),
   copyCodeButton: document.querySelector("#copyCodeButton"),
   copyShareLinkButton: document.querySelector("#copyShareLinkButton"),
+  showShareQrButton: document.querySelector("#showShareQrButton"),
+  shareQrPanel: document.querySelector("#shareQrPanel"),
+  shareQrCode: document.querySelector("#shareQrCode"),
+  saveShareQrButton: document.querySelector("#saveShareQrButton"),
   importCodeButton: document.querySelector("#importCodeButton"),
   importPreview: document.querySelector("#importPreview"),
   importPreviewStats: document.querySelector("#importPreviewStats"),
@@ -885,6 +889,98 @@ async function copyText(text) {
   textarea.select();
   document.execCommand("copy");
   textarea.remove();
+}
+
+function renderShareQr() {
+  if (!window.QRCode) {
+    throw new Error("QR library is not loaded");
+  }
+
+  const shareUrl = createCollectionShareUrl();
+  elements.shareQrCode.replaceChildren();
+  new window.QRCode(elements.shareQrCode, {
+    text: shareUrl,
+    typeNumber: 15,
+    width: 220,
+    height: 220,
+    colorDark: "#191918",
+    colorLight: "#ffffff",
+    correctLevel: window.QRCode.CorrectLevel.L,
+  });
+  elements.shareQrPanel.hidden = false;
+  return shareUrl;
+}
+
+function getRenderedQrImage() {
+  const canvas = elements.shareQrCode.querySelector("canvas");
+  if (canvas) return canvas;
+  const image = elements.shareQrCode.querySelector("img");
+  if (image) return image;
+  return null;
+}
+
+function drawWrappedText(context, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+  let line = "";
+  let lineCount = 0;
+
+  Array.from(text).forEach((character) => {
+    if (lineCount >= maxLines) return;
+    const testLine = `${line}${character}`;
+    if (context.measureText(testLine).width > maxWidth && line) {
+      context.fillText(line.trim(), x, y + lineCount * lineHeight);
+      line = character;
+      lineCount += 1;
+    } else {
+      line = testLine;
+    }
+  });
+
+  if (line && lineCount < maxLines) {
+    context.fillText(line.trim(), x, y + lineCount * lineHeight);
+  }
+}
+
+async function drawShareQrCard(shareUrl) {
+  const qrImage = getRenderedQrImage();
+  if (!qrImage) throw new Error("QR image is not ready");
+
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  canvas.width = 900;
+  canvas.height = 1100;
+
+  context.fillStyle = "#ff5b32";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#ffd84d";
+  context.beginPath();
+  context.arc(760, 130, 170, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "rgba(255,255,255,.16)";
+  context.beginPath();
+  context.arc(110, 920, 230, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = "#ffffff";
+  context.font = "900 62px sans-serif";
+  context.fillText("내 띠부씰 도감", 70, 110);
+  context.font = "800 30px sans-serif";
+  context.fillText("QR로 공유하기", 74, 160);
+
+  context.fillStyle = "#ffffff";
+  roundedRect(context, 150, 245, 600, 600, 34);
+  context.drawImage(qrImage, 205, 300, 490, 490);
+
+  context.fillStyle = "#191918";
+  context.font = "900 30px sans-serif";
+  context.textAlign = "center";
+  context.fillText("카메라로 찍으면 공유 도감 미리보기로 이동해요", 450, 910);
+
+  context.fillStyle = "rgba(255,255,255,.82)";
+  context.font = "700 20px sans-serif";
+  context.textAlign = "left";
+  drawWrappedText(context, shareUrl, 120, 970, 660, 30, 3);
+
+  return canvas;
 }
 
 function loadCollection() {
@@ -1720,6 +1816,8 @@ elements.shareButton.addEventListener("click", async () => {
 
 elements.codeButton.addEventListener("click", () => {
   refreshCollectionCode();
+  elements.shareQrPanel.hidden = true;
+  elements.shareQrCode.replaceChildren();
   hideImportPreview("코드가 준비됐어요.");
   hideCompareResult();
   setCodeTab("share");
@@ -1754,6 +1852,40 @@ elements.copyShareLinkButton.addEventListener("click", async () => {
   } catch (error) {
     console.error(error);
     elements.codeStatus.textContent = "공유 링크 복사에 실패했어요.";
+  }
+});
+
+elements.showShareQrButton.addEventListener("click", () => {
+  try {
+    renderShareQr();
+    elements.codeStatus.textContent = "공유 QR을 만들었어요.";
+    showToast("공유 QR을 만들었어요!");
+  } catch (error) {
+    console.error(error);
+    elements.codeStatus.textContent =
+      "QR 생성 파일을 불러오지 못했어요. 인터넷 연결을 확인한 뒤 다시 눌러 주세요.";
+  }
+});
+
+elements.saveShareQrButton.addEventListener("click", async () => {
+  elements.saveShareQrButton.disabled = true;
+  try {
+    const shareUrl = elements.shareQrPanel.hidden ? renderShareQr() : createCollectionShareUrl();
+    const canvas = await drawShareQrCard(shareUrl);
+    const blob = await canvasToBlob(canvas);
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `띠부씰-도감-공유-QR-${new Date().toISOString().slice(0, 10)}.png`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    elements.codeStatus.textContent = "공유 QR 이미지를 저장했어요.";
+    showToast("공유 QR 이미지를 저장했어요!");
+  } catch (error) {
+    console.error(error);
+    elements.codeStatus.textContent = "공유 QR 이미지 저장에 실패했어요.";
+  } finally {
+    elements.saveShareQrButton.disabled = false;
   }
 });
 
