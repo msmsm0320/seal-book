@@ -53,6 +53,13 @@ const state = {
 
 const elements = {
   grid: document.querySelector("#stickerGrid"),
+  mainContent: document.querySelector(".main-content"),
+  sharedCollectionPage: document.querySelector("#sharedCollectionPage"),
+  sharedCollectionStats: document.querySelector("#sharedCollectionStats"),
+  sharedCollectionStatus: document.querySelector("#sharedCollectionStatus"),
+  sharedCollectionCanvas: document.querySelector("#sharedCollectionCanvas"),
+  applySharedCollectionButton: document.querySelector("#applySharedCollectionButton"),
+  dismissSharedCollectionButton: document.querySelector("#dismissSharedCollectionButton"),
   template: document.querySelector("#stickerTemplate"),
   empty: document.querySelector("#emptyState"),
   filters: document.querySelector("#filterTabs"),
@@ -117,6 +124,7 @@ let pendingImportCounts = null;
 let latestComparison = null;
 let latestFriendCounts = null;
 let sharedCollectionCodeFromUrl = null;
+let sharedCollectionCounts = null;
 
 function encodeBase64Url(text) {
   return btoa(text).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -322,8 +330,12 @@ function setCodeTab(tabName) {
       : "코드가 준비됐어요.";
 }
 
-async function drawImportPreviewCanvas(nextCounts, includeArtwork = true) {
-  const canvas = elements.importPreviewCanvas;
+async function drawImportPreviewCanvas(
+  nextCounts,
+  includeArtwork = true,
+  canvas = elements.importPreviewCanvas,
+  title = "적용 후 도감 미리보기",
+) {
   const context = canvas.getContext("2d");
   const stats = getCollectionStats(nextCounts);
   const columns = 10;
@@ -352,7 +364,7 @@ async function drawImportPreviewCanvas(nextCounts, includeArtwork = true) {
 
   context.fillStyle = "#ffffff";
   context.font = "900 46px sans-serif";
-  context.fillText("적용 후 도감 미리보기", 48, 64);
+  context.fillText(title, 48, 64);
   context.font = "700 22px sans-serif";
   context.fillStyle = "rgba(255,255,255,.88)";
   context.fillText(
@@ -897,21 +909,56 @@ function loadCollection() {
   }
 }
 
+function hideSharedCollectionPage(message) {
+  sharedCollectionCounts = null;
+  elements.sharedCollectionPage.hidden = true;
+  elements.mainContent.hidden = false;
+  elements.sharedCollectionStats.replaceChildren();
+  elements.sharedCollectionStatus.textContent = message || "";
+  elements.applySharedCollectionButton.disabled = false;
+}
+
 async function openSharedCollectionPreviewFromUrl() {
   if (!sharedCollectionCodeFromUrl) return;
+  elements.mainContent.hidden = true;
+  elements.sharedCollectionPage.hidden = false;
+  elements.sharedCollectionStatus.textContent = "공유 도감을 불러오는 중이에요.";
+  elements.applySharedCollectionButton.disabled = true;
+  window.scrollTo({ top: elements.sharedCollectionPage.offsetTop - 24, behavior: "smooth" });
+
   try {
-    refreshCollectionCode();
-    setCodeTab("share");
-    hideCompareResult();
-    elements.collectionCodeInput.value = sharedCollectionCodeFromUrl;
-    elements.codeDialog.showModal();
-    pendingImportCounts = parseCollectionCode(sharedCollectionCodeFromUrl);
-    await renderImportPreview(pendingImportCounts);
-    elements.codeStatus.textContent = "공유 링크의 도감 코드를 미리보기로 불러왔어요.";
-    showToast("공유 링크를 미리보기로 열었어요.");
+    sharedCollectionCounts = parseCollectionCode(sharedCollectionCodeFromUrl);
+    const current = getCollectionStats(state.counts);
+    const shared = getCollectionStats(sharedCollectionCounts);
+    const changed = getChangedPokemon(sharedCollectionCounts);
+
+    elements.sharedCollectionStats.replaceChildren(
+      ...[
+        ["내 도감", `보유 ${current.owned}종`, `중복 ${current.duplicates}장`],
+        ["공유 도감", `보유 ${shared.owned}종`, `중복 ${shared.duplicates}장`],
+        ["바뀌는 씰", `${changed.length}종`, "적용 전까지 저장 안 됨"],
+      ].map(([label, value, note]) => {
+        const item = document.createElement("div");
+        item.innerHTML = `<span>${label}</span><strong>${value}</strong><small>${note}</small>`;
+        return item;
+      }),
+    );
+
+    await drawImportPreviewCanvas(
+      sharedCollectionCounts,
+      true,
+      elements.sharedCollectionCanvas,
+      "공유 받은 도감 미리보기",
+    );
+    elements.sharedCollectionStatus.textContent =
+      "미리보기만 표시 중이에요. 적용 버튼을 누르기 전까지 내 도감은 그대로예요.";
+    elements.applySharedCollectionButton.disabled = false;
+    showToast("공유 도감을 미리보기로 열었어요.");
   } catch (error) {
     console.warn("공유 데이터를 읽지 못했습니다.", error);
-    elements.codeStatus.textContent = "공유 링크의 코드를 읽지 못했어요.";
+    elements.sharedCollectionStatus.textContent =
+      "공유 링크의 코드를 읽지 못했어요. 링크가 잘렸는지 확인해 주세요.";
+    elements.applySharedCollectionButton.disabled = true;
   } finally {
     sharedCollectionCodeFromUrl = null;
   }
@@ -1043,6 +1090,7 @@ function showToast(message) {
 }
 
 async function maybeShowCompletionCertificate() {
+  if (sharedCollectionCodeFromUrl || !elements.sharedCollectionPage.hidden) return;
   const isComplete = pokemon.every(({ id }) => state.counts[id] > 0);
   if (!isComplete || localStorage.getItem(COMPLETION_CERTIFICATE_SEEN_KEY)) return;
   localStorage.setItem(COMPLETION_CERTIFICATE_SEEN_KEY, "true");
@@ -1707,6 +1755,22 @@ elements.copyShareLinkButton.addEventListener("click", async () => {
   }
 });
 
+elements.applySharedCollectionButton.addEventListener("click", () => {
+  if (!sharedCollectionCounts) {
+    elements.sharedCollectionStatus.textContent = "적용할 공유 도감이 없어요.";
+    return;
+  }
+  const nextCounts = sharedCollectionCounts;
+  hideSharedCollectionPage("공유 도감을 내 도감에 적용했어요.");
+  applyCollectionCounts(nextCounts);
+  showToast("공유 도감을 내 도감에 적용했어요.");
+});
+
+elements.dismissSharedCollectionButton.addEventListener("click", () => {
+  hideSharedCollectionPage("공유 도감 적용을 취소했어요.");
+  showToast("기존 내 도감으로 돌아왔어요.");
+});
+
 elements.importCodeButton.addEventListener("click", async () => {
   try {
     pendingImportCounts = parseCollectionCode(elements.collectionCodeInput.value);
@@ -1945,6 +2009,7 @@ elements.codeDialog.addEventListener("click", (event) => {
 });
 
 enableHoverMagnifier(elements.collectionCanvas);
+enableHoverMagnifier(elements.sharedCollectionCanvas);
 enableHoverMagnifier(elements.importPreviewCanvas);
 enableHoverMagnifier(elements.compareCanvas);
 document.addEventListener("click", hideCanvasMagnifier);

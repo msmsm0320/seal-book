@@ -328,6 +328,100 @@ h1 em {
   padding-block: 72px 90px;
 }
 
+.shared-page {
+  padding-block: 56px 16px;
+}
+
+.shared-page-card {
+  display: grid;
+  grid-template-columns: 0.82fr 1.18fr;
+  gap: 28px;
+  align-items: start;
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.shared-page-copy h2 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 44px);
+  letter-spacing: -0.05em;
+}
+
+.shared-page-copy > p {
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.shared-page-stats {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0;
+}
+
+.shared-page-stats div {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+.shared-page-stats span,
+.shared-page-stats small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.shared-page-stats strong {
+  display: block;
+  margin: 3px 0;
+  font-size: 24px;
+}
+
+.shared-page-status {
+  min-height: 24px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.shared-page-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.shared-page-actions .button {
+  min-height: 50px;
+}
+
+.shared-page-actions .button-ghost {
+  border-color: var(--line);
+  background: var(--white);
+  color: var(--ink);
+}
+
+.shared-page-actions .button-ghost:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.shared-page-preview {
+  max-height: 72vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #f1efe8;
+}
+
+.shared-page-preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+}
+
 .collection-heading {
   display: flex;
   gap: 24px;
@@ -1074,6 +1168,10 @@ dialog .save-image-button.button-ghost:hover {
     transform: none;
   }
 
+  .shared-page-card {
+    grid-template-columns: 1fr;
+  }
+
   .sticker-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1141,6 +1239,19 @@ dialog .save-image-button.button-ghost:hover {
 
   .main-content {
     padding-top: 55px;
+  }
+
+  .shared-page {
+    padding-top: 34px;
+  }
+
+  .shared-page-card {
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .shared-page-preview {
+    max-height: 58vh;
   }
 
   .collection-heading {

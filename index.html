@@ -97,6 +97,32 @@
       <div class="hero-shape hero-shape-two" aria-hidden="true"></div>
     </header>
 
+    <section class="shared-page shell" id="sharedCollectionPage" hidden>
+      <div class="shared-page-card">
+        <div class="shared-page-copy">
+          <p class="eyebrow orange">SHARED COLLECTION</p>
+          <h2>공유 받은 도감</h2>
+          <p>
+            친구가 보낸 도감 상태를 미리보기로 확인해보세요.
+            내 도감은 아직 바뀌지 않았고, 적용 버튼을 눌러야 저장돼요.
+          </p>
+          <div class="shared-page-stats" id="sharedCollectionStats"></div>
+          <p class="shared-page-status" id="sharedCollectionStatus">공유 도감을 불러오는 중이에요.</p>
+          <div class="shared-page-actions">
+            <button id="applySharedCollectionButton" class="button button-dark" type="button">
+              내 도감에 적용하기
+            </button>
+            <button id="dismissSharedCollectionButton" class="button button-ghost" type="button">
+              적용하지 않고 내 도감 보기
+            </button>
+          </div>
+        </div>
+        <div class="shared-page-preview">
+          <canvas id="sharedCollectionCanvas" width="1200" height="980"></canvas>
+        </div>
+      </div>
+    </section>
+
     <main class="shell main-content">
       <section class="collection-heading">
         <div>
