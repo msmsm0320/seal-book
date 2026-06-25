@@ -708,6 +708,25 @@ dialog::backdrop {
   font-size: 11px;
 }
 
+.certificate-dialog-card {
+  text-align: center;
+}
+
+.certificate-preview {
+  max-height: 55vh;
+  margin-top: 22px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff8df;
+}
+
+.certificate-preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .code-dialog-card {
   text-align: left;
 }
@@ -873,6 +892,10 @@ dialog::backdrop {
 
 .compare-result > .save-image-button {
   margin-top: 12px;
+}
+
+.compare-result > .save-image-button + .save-image-button {
+  margin-top: 8px;
 }
 
 .compare-columns {

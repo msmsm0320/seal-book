@@ -237,6 +237,9 @@
             <button id="saveCompareImageButton" class="button button-dark save-image-button" type="button">
               비교 이미지 저장
             </button>
+            <button id="saveCompareKakaoImageButton" class="button button-ghost save-image-button" type="button">
+              카톡용 세로 이미지 저장
+            </button>
             <div class="compare-columns">
               <section>
                 <h4>내가 줄 수 있어요</h4>
@@ -250,6 +253,21 @@
           </div>
         </section>
         <p class="share-status" id="codeStatus">코드가 준비됐어요.</p>
+      </form>
+    </dialog>
+
+    <dialog id="certificateDialog">
+      <form method="dialog" class="dialog-card certificate-dialog-card">
+        <button class="dialog-close" value="close" aria-label="닫기">×</button>
+        <span class="dialog-icon" aria-hidden="true">★</span>
+        <h2>컴플리트 달성!</h2>
+        <p>30주년 띠부씰 100종을 모두 모았어요. 인증서를 저장해 보세요.</p>
+        <div class="certificate-preview">
+          <canvas id="certificateCanvas" width="1200" height="1600"></canvas>
+        </div>
+        <button id="saveCertificateButton" class="button button-dark save-image-button" type="button">
+          컴플리트 인증서 저장
+        </button>
       </form>
     </dialog>
 

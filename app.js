@@ -41,6 +41,7 @@ const pokemon = [
 
 const STORAGE_KEY = "seal-book-collection-v1";
 const PACK_PRICE_KEY = "seal-book-pack-price-v1";
+const COMPLETION_CERTIFICATE_SEEN_KEY = "seal-book-completion-certificate-seen-v1";
 const DEFAULT_PACK_PRICE = 2000;
 const state = {
   counts: Object.fromEntries(pokemon.map(({ id }) => [id, 0])),
@@ -92,9 +93,13 @@ const elements = {
   compareSummary: document.querySelector("#compareSummary"),
   compareCanvas: document.querySelector("#compareCanvas"),
   saveCompareImageButton: document.querySelector("#saveCompareImageButton"),
+  saveCompareKakaoImageButton: document.querySelector("#saveCompareKakaoImageButton"),
   myGiveList: document.querySelector("#myGiveList"),
   friendGiveList: document.querySelector("#friendGiveList"),
   codeStatus: document.querySelector("#codeStatus"),
+  certificateDialog: document.querySelector("#certificateDialog"),
+  certificateCanvas: document.querySelector("#certificateCanvas"),
+  saveCertificateButton: document.querySelector("#saveCertificateButton"),
   collectionCanvas: document.querySelector("#collectionCanvas"),
   imageModeTabs: document.querySelector("#imageModeTabs"),
   shareStatus: document.querySelector("#shareStatus"),
@@ -107,6 +112,8 @@ const elements = {
 
 let imageMode = "all";
 let pendingImportCounts = null;
+let latestComparison = null;
+let latestFriendCounts = null;
 
 function encodeBase64Url(text) {
   return btoa(text).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -276,6 +283,8 @@ function hideImportPreview(message = "코드가 준비됐어요.") {
 }
 
 function hideCompareResult() {
+  latestComparison = null;
+  latestFriendCounts = null;
   elements.compareResult.hidden = true;
   elements.compareSummary.replaceChildren();
   elements.myGiveList.replaceChildren();
@@ -611,8 +620,199 @@ async function drawTradeComparisonCanvas(comparison, friendCounts, includeArtwor
   context.fillText("씰도감 · 친구 코드 교환 비교", 50, canvas.height - 35);
 }
 
+async function drawKakaoTradeComparisonCanvas(comparison, friendCounts, includeArtwork = true) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const columns = 3;
+  const cardWidth = 220;
+  const cardHeight = 190;
+  const gap = 18;
+  const startX = 48;
+  let y = 300;
+
+  const leftRows = Math.max(1, Math.ceil(comparison.myGive.length / columns));
+  const rightRows = Math.max(1, Math.ceil(comparison.friendGive.length / columns));
+  canvas.width = 800;
+  canvas.height = Math.max(1200, 300 + (leftRows + rightRows) * (cardHeight + gap) + 280);
+
+  const tradePokemon = [...comparison.myGive, ...comparison.friendGive];
+  const artworks = includeArtwork
+    ? await Promise.all(
+        tradePokemon.map((item) => {
+          const originalIndex = pokemon.findIndex(({ id }) => id === item.id);
+          return loadArtwork(window.STICKER_DATA_URLS?.[originalIndex] || item.image);
+        }),
+      )
+    : tradePokemon.map(() => null);
+  const artworkById = new Map(tradePokemon.map((item, index) => [item.id, artworks[index]]));
+
+  context.fillStyle = "#f7f5ef";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#191918";
+  context.fillRect(0, 0, canvas.width, 230);
+  context.fillStyle = "#ffffff";
+  context.font = "900 52px sans-serif";
+  context.fillText("친구와 교환 비교", 48, 78);
+  context.font = "700 25px sans-serif";
+  context.fillStyle = "rgba(255,255,255,.88)";
+  context.fillText(`내 신규 +${comparison.myGain}종`, 50, 124);
+  context.fillText(`친구 신규 +${comparison.friendGain}종`, 50, 160);
+
+  function drawSectionTitle(label, count, color) {
+    context.fillStyle = color;
+    roundedRect(context, 48, y, canvas.width - 96, 54, 16);
+    context.fillStyle = "#ffffff";
+    context.font = "900 26px sans-serif";
+    context.fillText(label, 74, y + 36);
+    context.font = "800 20px sans-serif";
+    context.textAlign = "right";
+    context.fillText(`${count}종`, canvas.width - 74, y + 35);
+    context.textAlign = "left";
+    y += 74;
+  }
+
+  function drawEmpty(message) {
+    context.fillStyle = "#e7e4dc";
+    roundedRect(context, 48, y, canvas.width - 96, 150, 18);
+    context.fillStyle = "#77736b";
+    context.font = "800 25px sans-serif";
+    context.textAlign = "center";
+    context.fillText(message, canvas.width / 2, y + 86);
+    context.textAlign = "left";
+    y += 174;
+  }
+
+  function drawCards(items, counts, accentColor) {
+    if (items.length === 0) return;
+    items.forEach((item, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const x = startX + column * (cardWidth + gap);
+      const cardY = y + row * (cardHeight + gap);
+      const spareCount = Math.max(0, (counts[item.id] || 0) - 1);
+      const artwork = artworkById.get(item.id);
+
+      context.fillStyle = "#ffffff";
+      roundedRect(context, x, cardY, cardWidth, cardHeight, 18);
+      context.strokeStyle = accentColor;
+      context.lineWidth = 4;
+      context.strokeRect(x + 2, cardY + 2, cardWidth - 4, cardHeight - 4);
+
+      if (artwork) {
+        context.drawImage(artwork, x + 55, cardY + 12, 110, 110);
+      }
+
+      context.fillStyle = "#191918";
+      context.font = "900 24px sans-serif";
+      context.textAlign = "center";
+      context.fillText(item.name, x + cardWidth / 2, cardY + 148);
+      context.fillStyle = "#77736b";
+      context.font = "800 16px sans-serif";
+      context.fillText(`여분 ${spareCount}장`, x + cardWidth / 2, cardY + 172);
+      context.textAlign = "left";
+    });
+    y += Math.ceil(items.length / columns) * (cardHeight + gap) + 28;
+  }
+
+  drawSectionTitle("내가 줄 수 있어요", comparison.myGive.length, "#ff5b32");
+  comparison.myGive.length === 0
+    ? drawEmpty("친구에게 줄 후보가 없어요.")
+    : drawCards(comparison.myGive, state.counts, "#ff5b32");
+
+  drawSectionTitle("친구가 줄 수 있어요", comparison.friendGive.length, "#3564d8");
+  comparison.friendGive.length === 0
+    ? drawEmpty("친구에게 받을 후보가 없어요.")
+    : drawCards(comparison.friendGive, friendCounts, "#3564d8");
+
+  context.fillStyle = "#77736b";
+  context.font = "600 18px sans-serif";
+  context.fillText("씰도감 · 카톡 공유용 교환 비교", 48, canvas.height - 42);
+
+  return canvas;
+}
+
+async function drawCompletionCertificate(includeArtwork = true) {
+  const canvas = elements.certificateCanvas;
+  const context = canvas.getContext("2d");
+  const counts = Object.values(state.counts);
+  const totalPacks = counts.reduce((sum, count) => sum + count, 0);
+  const duplicates = counts.reduce((sum, count) => sum + Math.max(0, count - 1), 0);
+  const spent = totalPacks * Math.max(0, Number(state.packPrice) || 0);
+  const featured = includeArtwork
+    ? await Promise.all(
+        [25, 6, 150].map((id) => {
+          const index = pokemon.findIndex((item) => item.id === id);
+          return loadArtwork(window.STICKER_DATA_URLS?.[index] || pokemon[index]?.image);
+        }),
+      )
+    : [];
+
+  canvas.width = 1200;
+  canvas.height = 1600;
+  context.fillStyle = "#ffcf2e";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#fff8df";
+  roundedRect(context, 80, 80, 1040, 1440, 40);
+  context.strokeStyle = "#191918";
+  context.lineWidth = 8;
+  context.strokeRect(105, 105, 990, 1390);
+
+  context.fillStyle = "#191918";
+  context.font = "900 58px sans-serif";
+  context.textAlign = "center";
+  context.fillText("30주년 띠부씰", canvas.width / 2, 215);
+  context.font = "900 86px sans-serif";
+  context.fillText("COMPLETE", canvas.width / 2, 325);
+  context.font = "800 34px sans-serif";
+  context.fillStyle = "#ff5b32";
+  context.fillText("100종 수집 완료 인증서", canvas.width / 2, 390);
+
+  featured.forEach((artwork, index) => {
+    if (!artwork) return;
+    context.drawImage(artwork, 260 + index * 210, 465, 160, 160);
+  });
+
+  context.fillStyle = "#191918";
+  context.font = "900 42px sans-serif";
+  context.fillText("당신은 띠부씰 마스터입니다", canvas.width / 2, 720);
+
+  const stats = [
+    ["보유", "100종"],
+    ["총 기록", `${totalPacks.toLocaleString("ko-KR")}장`],
+    ["중복", `${duplicates.toLocaleString("ko-KR")}장`],
+    ["기록상 지출", formatWon(spent)],
+  ];
+  stats.forEach(([label, value], index) => {
+    const x = index % 2 === 0 ? 190 : 620;
+    const y = 820 + Math.floor(index / 2) * 170;
+    context.fillStyle = "#ffffff";
+    roundedRect(context, x, y, 390, 120, 24);
+    context.fillStyle = "#77736b";
+    context.font = "800 24px sans-serif";
+    context.textAlign = "left";
+    context.fillText(label, x + 32, y + 42);
+    context.fillStyle = "#191918";
+    context.font = "900 36px sans-serif";
+    context.fillText(value, x + 32, y + 88);
+  });
+
+  context.fillStyle = "#3564d8";
+  roundedRect(context, 190, 1210, 820, 105, 26);
+  context.fillStyle = "#ffffff";
+  context.font = "900 36px sans-serif";
+  context.textAlign = "center";
+  context.fillText("씰도감이 인증합니다", canvas.width / 2, 1275);
+
+  context.fillStyle = "#77736b";
+  context.font = "600 22px sans-serif";
+  context.fillText(new Date().toISOString().slice(0, 10), canvas.width / 2, 1410);
+  context.textAlign = "left";
+}
+
 async function renderTradeComparison(friendCounts) {
   const comparison = getTradeComparison(friendCounts);
+  latestComparison = comparison;
+  latestFriendCounts = friendCounts;
   const summaryItems = [
     ["내 신규 획득", `+${comparison.myGain}종`],
     ["친구 신규 획득", `+${comparison.friendGain}종`],
@@ -806,6 +1006,7 @@ function renderStats() {
 function render() {
   renderCards();
   renderStats();
+  maybeShowCompletionCertificate();
 }
 
 function showToast(message) {
@@ -813,6 +1014,15 @@ function showToast(message) {
   elements.toast.classList.add("show");
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => elements.toast.classList.remove("show"), 2200);
+}
+
+async function maybeShowCompletionCertificate() {
+  const isComplete = pokemon.every(({ id }) => state.counts[id] > 0);
+  if (!isComplete || localStorage.getItem(COMPLETION_CERTIFICATE_SEEN_KEY)) return;
+  localStorage.setItem(COMPLETION_CERTIFICATE_SEEN_KEY, "true");
+  await drawCompletionCertificate(true);
+  elements.certificateDialog.showModal();
+  showToast("컴플리트 인증서가 준비됐어요!");
 }
 
 function roundedRect(context, x, y, width, height, radius) {
@@ -1333,6 +1543,37 @@ elements.saveCompareImageButton.addEventListener("click", async () => {
   }
 });
 
+elements.saveCompareKakaoImageButton.addEventListener("click", async () => {
+  if (!latestComparison || !latestFriendCounts) {
+    elements.codeStatus.textContent = "먼저 친구 코드 비교를 만들어 주세요.";
+    return;
+  }
+
+  elements.saveCompareKakaoImageButton.disabled = true;
+  elements.codeStatus.textContent = "카톡용 세로 이미지를 저장하는 중이에요…";
+  try {
+    const kakaoCanvas = await drawKakaoTradeComparisonCanvas(
+      latestComparison,
+      latestFriendCounts,
+      true,
+    );
+    const blob = await canvasToBlob(kakaoCanvas);
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `띠부씰-친구-교환-비교-카톡용-${new Date().toISOString().slice(0, 10)}.png`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    elements.codeStatus.textContent = "카톡용 세로 이미지를 저장했어요.";
+    showToast("카톡용 비교 이미지를 저장했어요!");
+  } catch (error) {
+    console.error(error);
+    elements.codeStatus.textContent = "카톡용 이미지 저장에 실패했어요.";
+  } finally {
+    elements.saveCompareKakaoImageButton.disabled = false;
+  }
+});
+
 elements.friendCodeInput.addEventListener("input", () => {
   if (!elements.compareResult.hidden) {
     hideCompareResult();
@@ -1395,9 +1636,30 @@ elements.resetButton.addEventListener("click", () => {
   pokemon.forEach(({ id }) => {
     state.counts[id] = 0;
   });
+  localStorage.removeItem(COMPLETION_CERTIFICATE_SEEN_KEY);
   saveCollection();
   render();
   showToast("수집 기록을 초기화했어요.");
+});
+
+elements.saveCertificateButton.addEventListener("click", async () => {
+  elements.saveCertificateButton.disabled = true;
+  try {
+    await drawCompletionCertificate(true);
+    const blob = await canvasToBlob(elements.certificateCanvas);
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `띠부씰-컴플리트-인증서-${new Date().toISOString().slice(0, 10)}.png`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    showToast("컴플리트 인증서를 저장했어요!");
+  } catch (error) {
+    console.error(error);
+    showToast("인증서 저장에 실패했어요.");
+  } finally {
+    elements.saveCertificateButton.disabled = false;
+  }
 });
 
 elements.shareDialog.addEventListener("click", (event) => {
