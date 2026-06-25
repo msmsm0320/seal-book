@@ -80,6 +80,7 @@ const elements = {
   collectionCodeOutput: document.querySelector("#collectionCodeOutput"),
   collectionCodeInput: document.querySelector("#collectionCodeInput"),
   copyCodeButton: document.querySelector("#copyCodeButton"),
+  copyShareLinkButton: document.querySelector("#copyShareLinkButton"),
   importCodeButton: document.querySelector("#importCodeButton"),
   importPreview: document.querySelector("#importPreview"),
   importPreviewStats: document.querySelector("#importPreviewStats"),
@@ -115,6 +116,7 @@ let imageMode = "all";
 let pendingImportCounts = null;
 let latestComparison = null;
 let latestFriendCounts = null;
+let sharedCollectionCodeFromUrl = null;
 
 function encodeBase64Url(text) {
   return btoa(text).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -132,6 +134,14 @@ function createCollectionCode() {
     c: pokemon.map(({ id }) => Math.min(99, Math.max(0, Number(state.counts[id]) || 0))),
   };
   return `SEALBOOK1:${encodeBase64Url(JSON.stringify(payload))}`;
+}
+
+function createCollectionShareUrl() {
+  const url = new URL(location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("collection", createCollectionCode());
+  return url.toString();
 }
 
 function parseCollectionCode(rawCode) {
@@ -866,14 +876,8 @@ async function copyText(text) {
 function loadCollection() {
   const shared = new URLSearchParams(location.search).get("collection");
   if (shared) {
-    try {
-      applyCollectionCode(shared);
-      history.replaceState({}, "", location.pathname);
-      showToast("공유받은 컬렉션을 불러왔어요.");
-      return;
-    } catch (error) {
-      console.warn("공유 데이터를 읽지 못했습니다.", error);
-    }
+    sharedCollectionCodeFromUrl = shared;
+    history.replaceState({}, "", location.pathname);
   }
 
   try {
@@ -890,6 +894,26 @@ function loadCollection() {
   const savedPackPrice = Number(localStorage.getItem(PACK_PRICE_KEY));
   if (Number.isFinite(savedPackPrice) && savedPackPrice >= 0) {
     state.packPrice = savedPackPrice;
+  }
+}
+
+async function openSharedCollectionPreviewFromUrl() {
+  if (!sharedCollectionCodeFromUrl) return;
+  try {
+    refreshCollectionCode();
+    setCodeTab("share");
+    hideCompareResult();
+    elements.collectionCodeInput.value = sharedCollectionCodeFromUrl;
+    elements.codeDialog.showModal();
+    pendingImportCounts = parseCollectionCode(sharedCollectionCodeFromUrl);
+    await renderImportPreview(pendingImportCounts);
+    elements.codeStatus.textContent = "공유 링크의 도감 코드를 미리보기로 불러왔어요.";
+    showToast("공유 링크를 미리보기로 열었어요.");
+  } catch (error) {
+    console.warn("공유 데이터를 읽지 못했습니다.", error);
+    elements.codeStatus.textContent = "공유 링크의 코드를 읽지 못했어요.";
+  } finally {
+    sharedCollectionCodeFromUrl = null;
   }
 }
 
@@ -1671,6 +1695,18 @@ elements.copyCodeButton.addEventListener("click", async () => {
   }
 });
 
+elements.copyShareLinkButton.addEventListener("click", async () => {
+  try {
+    const shareUrl = createCollectionShareUrl();
+    await copyText(shareUrl);
+    elements.codeStatus.textContent = "공유 링크를 복사했어요.";
+    showToast("공유 링크를 복사했어요!");
+  } catch (error) {
+    console.error(error);
+    elements.codeStatus.textContent = "공유 링크 복사에 실패했어요.";
+  }
+});
+
 elements.importCodeButton.addEventListener("click", async () => {
   try {
     pendingImportCounts = parseCollectionCode(elements.collectionCodeInput.value);
@@ -1916,3 +1952,4 @@ window.addEventListener("scroll", hideCanvasMagnifier, true);
 
 loadCollection();
 render();
+openSharedCollectionPreviewFromUrl();
