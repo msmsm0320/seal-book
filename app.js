@@ -207,7 +207,7 @@ function showCanvasMagnifier(sourceCanvas, event) {
   const sourceY = ((event.clientY - rect.top) / rect.height) * sourceCanvas.height;
   const magnifierContext = elements.magnifierCanvas.getContext("2d");
   const outputSize = elements.magnifierCanvas.width;
-  const sampleSize = Math.min(220, sourceCanvas.width, sourceCanvas.height);
+  const sampleSize = Math.min(420, sourceCanvas.width, sourceCanvas.height);
   const halfSample = sampleSize / 2;
   const sampleX = Math.max(0, Math.min(sourceCanvas.width - sampleSize, sourceX - halfSample));
   const sampleY = Math.max(0, Math.min(sourceCanvas.height - sampleSize, sourceY - halfSample));
@@ -228,8 +228,8 @@ function showCanvasMagnifier(sourceCanvas, event) {
   );
 
   const margin = 16;
-  const magnifierWidth = 292;
-  const magnifierHeight = 330;
+  const magnifierWidth = 332;
+  const magnifierHeight = 370;
   let left = event.clientX + 18;
   let top = event.clientY + 18;
   if (left + magnifierWidth > window.innerWidth - margin) {

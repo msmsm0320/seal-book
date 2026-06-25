@@ -927,8 +927,8 @@ dialog::backdrop {
 .canvas-magnifier {
   position: fixed;
   z-index: 9999;
-  width: 292px;
-  padding: 12px;
+  width: 332px;
+  padding: 16px;
   border: 1px solid rgba(25, 25, 24, 0.16);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.96);
@@ -938,8 +938,8 @@ dialog::backdrop {
 
 .canvas-magnifier canvas {
   display: block;
-  width: 260px;
-  height: 260px;
+  width: 300px;
+  height: 300px;
   border-radius: 14px;
   background: #f1efe8;
 }
