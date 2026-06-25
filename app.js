@@ -344,9 +344,11 @@ async function drawImportPreviewCanvas(
   const gap = 10;
   const startX = 58;
   const startY = 178;
+  const rows = Math.ceil(pokemon.length / columns);
+  const footerY = startY + rows * (cardHeight + gap) + 34;
 
   canvas.width = 1200;
-  canvas.height = 980;
+  canvas.height = footerY + 40;
 
   const artworks = includeArtwork
     ? await Promise.all(
@@ -431,7 +433,7 @@ async function drawImportPreviewCanvas(
 
   context.fillStyle = "#77736b";
   context.font = "600 17px sans-serif";
-  context.fillText("파란 테두리는 현재 도감과 달라지는 씰이에요.", 50, 940);
+  context.fillText("파란 테두리는 현재 도감과 달라지는 씰이에요.", 50, footerY);
 }
 
 async function renderImportPreview(nextCounts) {
