@@ -744,6 +744,41 @@ dialog::backdrop {
   text-align: center;
 }
 
+.code-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 18px;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.code-tab {
+  min-height: 42px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.code-tab.active {
+  background: var(--white);
+  box-shadow: 0 3px 12px rgba(30, 27, 22, 0.08);
+  color: var(--orange);
+}
+
+.code-panel {
+  display: none;
+}
+
+.code-panel.active {
+  display: block;
+}
+
 .code-field {
   display: grid;
   gap: 8px;
@@ -843,6 +878,21 @@ dialog::backdrop {
   margin-top: 4px;
   color: #3564d8;
   font-size: 18px;
+}
+
+.compare-preview-image {
+  max-height: 360px;
+  margin-top: 12px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #eef2ff;
+}
+
+.compare-preview-image canvas {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .compare-columns {

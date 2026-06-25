@@ -75,6 +75,7 @@ const elements = {
   shareDialog: document.querySelector("#shareDialog"),
   codeButton: document.querySelector("#codeButton"),
   codeDialog: document.querySelector("#codeDialog"),
+  codeTabs: document.querySelector("#codeTabs"),
   collectionCodeOutput: document.querySelector("#collectionCodeOutput"),
   collectionCodeInput: document.querySelector("#collectionCodeInput"),
   copyCodeButton: document.querySelector("#copyCodeButton"),
@@ -91,6 +92,7 @@ const elements = {
   compareCodeButton: document.querySelector("#compareCodeButton"),
   compareResult: document.querySelector("#compareResult"),
   compareSummary: document.querySelector("#compareSummary"),
+  compareCanvas: document.querySelector("#compareCanvas"),
   myGiveList: document.querySelector("#myGiveList"),
   friendGiveList: document.querySelector("#friendGiveList"),
   codeStatus: document.querySelector("#codeStatus"),
@@ -227,6 +229,25 @@ function hideCompareResult() {
   elements.compareSummary.replaceChildren();
   elements.myGiveList.replaceChildren();
   elements.friendGiveList.replaceChildren();
+  elements.compareCanvas.getContext("2d").clearRect(
+    0,
+    0,
+    elements.compareCanvas.width,
+    elements.compareCanvas.height,
+  );
+}
+
+function setCodeTab(tabName) {
+  document.querySelectorAll("[data-code-tab]").forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.codeTab === tabName);
+  });
+  document.querySelectorAll("[data-code-panel]").forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.codePanel === tabName);
+  });
+  elements.codeStatus.textContent =
+    tabName === "compare"
+      ? "친구 코드를 붙여넣고 비교해 보세요."
+      : "코드가 준비됐어요.";
 }
 
 async function drawImportPreviewCanvas(nextCounts, includeArtwork = true) {
@@ -414,7 +435,133 @@ function renderCompareList(container, items, counts, emptyMessage) {
   );
 }
 
-function renderTradeComparison(friendCounts) {
+async function drawTradeComparisonCanvas(comparison, friendCounts, includeArtwork = true) {
+  const canvas = elements.compareCanvas;
+  const context = canvas.getContext("2d");
+  const columns = 4;
+  const cardWidth = 150;
+  const cardHeight = 150;
+  const gap = 14;
+  const sectionWidth = 650;
+  const missingRows = Math.max(1, Math.ceil(comparison.myGive.length / columns));
+  const friendRows = Math.max(1, Math.ceil(comparison.friendGive.length / columns));
+  const rows = Math.max(missingRows, friendRows);
+  const startY = 270;
+
+  canvas.width = 1400;
+  canvas.height = Math.max(820, startY + rows * (cardHeight + gap) + 80);
+
+  const tradePokemon = [...comparison.myGive, ...comparison.friendGive];
+  const artworks = includeArtwork
+    ? await Promise.all(
+        tradePokemon.map((item) => {
+          const originalIndex = pokemon.findIndex(({ id }) => id === item.id);
+          return loadArtwork(window.STICKER_DATA_URLS?.[originalIndex] || item.image);
+        }),
+      )
+    : tradePokemon.map(() => null);
+  const artworkById = new Map(tradePokemon.map((item, index) => [item.id, artworks[index]]));
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#f7f5ef";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#191918";
+  context.fillRect(0, 0, canvas.width, 190);
+  context.fillStyle = "#ffffff";
+  context.font = "900 52px sans-serif";
+  context.fillText("친구와 교환 비교", 60, 76);
+  context.font = "700 24px sans-serif";
+  context.fillStyle = "rgba(255,255,255,.86)";
+  context.fillText(
+    `내 신규 +${comparison.myGain}종 · 친구 신규 +${comparison.friendGain}종`,
+    62,
+    122,
+  );
+
+  function drawHeader(label, detail, x, color) {
+    context.fillStyle = color;
+    roundedRect(context, x, 215, sectionWidth, 42, 14);
+    context.fillStyle = "#ffffff";
+    context.font = "900 22px sans-serif";
+    context.fillText(label, x + 22, 243);
+    context.font = "700 17px sans-serif";
+    context.textAlign = "right";
+    context.fillText(detail, x + sectionWidth - 22, 242);
+    context.textAlign = "left";
+  }
+
+  function drawEmpty(message, x) {
+    context.fillStyle = "#e7e4dc";
+    roundedRect(context, x, startY, sectionWidth, 140, 16);
+    context.fillStyle = "#77736b";
+    context.font = "800 24px sans-serif";
+    context.textAlign = "center";
+    context.fillText(message, x + sectionWidth / 2, startY + 78);
+    context.textAlign = "left";
+  }
+
+  function drawCard(item, index, x, counts, accentColor) {
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    const cardX = x + column * (cardWidth + gap);
+    const cardY = startY + row * (cardHeight + gap);
+    const spareCount = Math.max(0, (counts[item.id] || 0) - 1);
+    const artwork = artworkById.get(item.id);
+
+    context.fillStyle = "#ffffff";
+    roundedRect(context, cardX, cardY, cardWidth, cardHeight, 14);
+    context.strokeStyle = accentColor;
+    context.lineWidth = 3;
+    context.strokeRect(cardX + 1.5, cardY + 1.5, cardWidth - 3, cardHeight - 3);
+
+    if (artwork) {
+      context.drawImage(artwork, cardX + 35, cardY + 8, 80, 80);
+    } else {
+      context.fillStyle = accentColor === "#3564d8" ? "#edf2ff" : "#ffede8";
+      context.beginPath();
+      context.arc(cardX + cardWidth / 2, cardY + 48, 34, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = accentColor;
+      context.font = "900 22px sans-serif";
+      context.textAlign = "center";
+      context.fillText(item.name[0], cardX + cardWidth / 2, cardY + 56);
+    }
+
+    context.fillStyle = "#191918";
+    context.font = "800 17px sans-serif";
+    context.textAlign = "center";
+    context.fillText(item.name, cardX + cardWidth / 2, cardY + 115);
+    context.fillStyle = "#77736b";
+    context.font = "700 13px sans-serif";
+    context.fillText(`여분 ${spareCount}장`, cardX + cardWidth / 2, cardY + 135);
+    context.textAlign = "left";
+  }
+
+  const leftX = 50;
+  const rightX = 700;
+  drawHeader("내가 줄 수 있어요", `${comparison.myGive.length}종`, leftX, "#ff5b32");
+  drawHeader("친구가 줄 수 있어요", `${comparison.friendGive.length}종`, rightX, "#3564d8");
+
+  if (comparison.myGive.length === 0) {
+    drawEmpty("친구에게 줄 후보가 없어요.", leftX);
+  } else {
+    comparison.myGive.forEach((item, index) => drawCard(item, index, leftX, state.counts, "#ff5b32"));
+  }
+
+  if (comparison.friendGive.length === 0) {
+    drawEmpty("친구에게 받을 후보가 없어요.", rightX);
+  } else {
+    comparison.friendGive.forEach((item, index) =>
+      drawCard(item, index, rightX, friendCounts, "#3564d8"),
+    );
+  }
+
+  context.fillStyle = "#77736b";
+  context.font = "600 17px sans-serif";
+  context.fillText("씰도감 · 친구 코드 교환 비교", 50, canvas.height - 35);
+}
+
+async function renderTradeComparison(friendCounts) {
   const comparison = getTradeComparison(friendCounts);
   const summaryItems = [
     ["내 신규 획득", `+${comparison.myGain}종`],
@@ -442,6 +589,8 @@ function renderTradeComparison(friendCounts) {
     "친구에게 받을 수 있는 중복 씰이 없어요.",
   );
   elements.compareResult.hidden = false;
+  elements.codeStatus.textContent = "교환 비교 이미지를 만드는 중이에요…";
+  await drawTradeComparisonCanvas(comparison, friendCounts, true);
   elements.codeStatus.textContent = "친구 코드 비교 결과를 만들었어요.";
 }
 
@@ -1043,8 +1192,15 @@ elements.codeButton.addEventListener("click", () => {
   refreshCollectionCode();
   hideImportPreview("코드가 준비됐어요.");
   hideCompareResult();
+  setCodeTab("share");
   elements.codeDialog.showModal();
   elements.collectionCodeOutput.select();
+});
+
+elements.codeTabs.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-code-tab]");
+  if (!tab) return;
+  setCodeTab(tab.dataset.codeTab);
 });
 
 elements.copyCodeButton.addEventListener("click", async () => {
@@ -1097,10 +1253,10 @@ elements.collectionCodeInput.addEventListener("input", () => {
   }
 });
 
-elements.compareCodeButton.addEventListener("click", () => {
+elements.compareCodeButton.addEventListener("click", async () => {
   try {
     const friendCounts = parseCollectionCode(elements.friendCodeInput.value);
-    renderTradeComparison(friendCounts);
+    await renderTradeComparison(friendCounts);
     showToast("친구 코드 비교를 완료했어요!");
   } catch (error) {
     console.error(error);

@@ -183,57 +183,64 @@
         <h2>도감 코드 공유</h2>
         <p>하스스톤/롤체 덱 코드처럼 현재 보유 수량을 코드로 복사하고 불러올 수 있어요.</p>
 
-        <label class="code-field">
-          <span>내 도감 코드</span>
-          <textarea id="collectionCodeOutput" readonly spellcheck="false"></textarea>
-        </label>
-        <button id="copyCodeButton" class="button button-dark save-image-button" type="button">
-          코드 복사
-        </button>
-
-        <div class="code-import">
-          <label class="code-field">
-            <span>받은 코드 붙여넣기</span>
-            <textarea
-              id="collectionCodeInput"
-              spellcheck="false"
-              placeholder="SEALBOOK1:..."
-            ></textarea>
-          </label>
-          <button id="importCodeButton" class="button button-ghost save-image-button" type="button">
-            변경 미리보기
-          </button>
-          <div class="import-preview" id="importPreview" hidden>
-            <h3>변경 미리보기</h3>
-            <div class="import-preview-stats" id="importPreviewStats"></div>
-            <div class="import-preview-zoom-control" aria-label="코드 적용 미리보기 확대">
-              <label for="importPreviewZoomRange">이미지 확대</label>
-              <input
-                id="importPreviewZoomRange"
-                type="range"
-                min="100"
-                max="250"
-                step="25"
-                value="100"
-              />
-              <strong id="importPreviewZoomValue">100%</strong>
-            </div>
-            <div class="import-preview-image">
-              <canvas id="importPreviewCanvas" width="1200" height="980"></canvas>
-            </div>
-            <p id="importPreviewChanges"></p>
-            <div class="import-preview-actions">
-              <button id="applyImportButton" class="button button-dark" type="button">
-                변경 적용
-              </button>
-              <button id="cancelImportButton" class="button button-ghost" type="button">
-                취소
-              </button>
-            </div>
-          </div>
+        <div class="code-tabs" id="codeTabs">
+          <button class="code-tab active" data-code-tab="share" type="button">도감 코드</button>
+          <button class="code-tab" data-code-tab="compare" type="button">친구 비교</button>
         </div>
 
-        <div class="code-compare">
+        <section class="code-panel active" data-code-panel="share">
+          <label class="code-field">
+            <span>내 도감 코드</span>
+            <textarea id="collectionCodeOutput" readonly spellcheck="false"></textarea>
+          </label>
+          <button id="copyCodeButton" class="button button-dark save-image-button" type="button">
+            코드 복사
+          </button>
+
+          <div class="code-import">
+            <label class="code-field">
+              <span>받은 코드 붙여넣기</span>
+              <textarea
+                id="collectionCodeInput"
+                spellcheck="false"
+                placeholder="SEALBOOK1:..."
+              ></textarea>
+            </label>
+            <button id="importCodeButton" class="button button-ghost save-image-button" type="button">
+              변경 미리보기
+            </button>
+            <div class="import-preview" id="importPreview" hidden>
+              <h3>변경 미리보기</h3>
+              <div class="import-preview-stats" id="importPreviewStats"></div>
+              <div class="import-preview-zoom-control" aria-label="코드 적용 미리보기 확대">
+                <label for="importPreviewZoomRange">이미지 확대</label>
+                <input
+                  id="importPreviewZoomRange"
+                  type="range"
+                  min="100"
+                  max="250"
+                  step="25"
+                  value="100"
+                />
+                <strong id="importPreviewZoomValue">100%</strong>
+              </div>
+              <div class="import-preview-image">
+                <canvas id="importPreviewCanvas" width="1200" height="980"></canvas>
+              </div>
+              <p id="importPreviewChanges"></p>
+              <div class="import-preview-actions">
+                <button id="applyImportButton" class="button button-dark" type="button">
+                  변경 적용
+                </button>
+                <button id="cancelImportButton" class="button button-ghost" type="button">
+                  취소
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="code-panel" data-code-panel="compare">
           <label class="code-field">
             <span>친구 코드 비교</span>
             <textarea
@@ -248,6 +255,9 @@
           <div class="compare-result" id="compareResult" hidden>
             <h3>교환 비교 결과</h3>
             <div class="compare-summary" id="compareSummary"></div>
+            <div class="compare-preview-image">
+              <canvas id="compareCanvas" width="1400" height="820"></canvas>
+            </div>
             <div class="compare-columns">
               <section>
                 <h4>내가 줄 수 있어요</h4>
@@ -259,7 +269,7 @@
               </section>
             </div>
           </div>
-        </div>
+        </section>
         <p class="share-status" id="codeStatus">코드가 준비됐어요.</p>
       </form>
     </dialog>
