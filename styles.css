@@ -947,15 +947,80 @@ dialog .save-image-button.button-ghost:hover {
   min-height: 180px;
   place-items: center;
   padding: 12px 8px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--white);
+  perspective: 900px;
   text-align: center;
 }
 
-.draw-card.new {
+.draw-card-inner {
+  position: relative;
+  width: 100%;
+  min-height: 170px;
+  transform-style: preserve-3d;
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.25, 1.25);
+}
+
+.draw-card.hidden-card .draw-card-inner {
+  transform: rotateY(180deg) scale(0.92);
+}
+
+.draw-card-front,
+.draw-card-back {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  backface-visibility: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--white);
+}
+
+.draw-card-front {
+  position: absolute;
+  padding: 12px 8px;
+}
+
+.draw-card-back {
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 216, 77, 0.8), transparent 28%),
+    linear-gradient(135deg, #ff5b32, #ff8c42);
+  color: var(--white);
+  transform: rotateY(180deg);
+}
+
+.draw-card-back span {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 3px solid rgba(255, 255, 255, 0.82);
+  border-radius: 50%;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.draw-card-back small {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 900;
+}
+
+.draw-card.revealed {
+  animation: draw-pop 360ms ease both;
+}
+
+.draw-card.new .draw-card-front {
   border-color: var(--orange);
   box-shadow: 0 8px 20px rgba(255, 91, 50, 0.12);
+}
+
+.draw-card.spark::after {
+  position: absolute;
+  inset: -7px;
+  border: 2px solid rgba(255, 216, 77, 0.85);
+  border-radius: 20px;
+  animation: draw-spark 900ms ease-out both;
+  content: "";
+  pointer-events: none;
 }
 
 .draw-card img {
@@ -1001,6 +1066,41 @@ dialog .save-image-button.button-ghost:hover {
   padding: 4px 7px;
   background: var(--ink);
   color: var(--white);
+}
+
+.draw-stack {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #fff0e9;
+  color: var(--orange);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+@keyframes draw-pop {
+  0% {
+    transform: translateY(8px) scale(0.95);
+  }
+
+  70% {
+    transform: translateY(-3px) scale(1.03);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes draw-spark {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.9);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
 }
 
 .code-dialog-card {

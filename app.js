@@ -139,6 +139,7 @@ let latestFriendCounts = null;
 let sharedCollectionCodeFromUrl = null;
 let sharedCollectionCounts = null;
 let latestDrawCounts = null;
+let isDrawing = false;
 
 function encodeBase64Url(text) {
   return btoa(text).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -518,26 +519,36 @@ function resetDrawResult(message = "아직 뽑기 전이에요.") {
   elements.drawSummary.replaceChildren();
   elements.drawResultList.replaceChildren();
   elements.drawStatus.textContent = message;
+  elements.applyDrawButton.disabled = true;
 }
 
 function runRandomDraw(drawCount) {
   const safeCount = Math.min(500, Math.max(1, Math.floor(Number(drawCount) || 1)));
   const resultCounts = Object.fromEntries(pokemon.map(({ id }) => [id, 0]));
   const simulatedCounts = { ...state.counts };
+  const pulls = [];
   let newlyOwned = 0;
   let duplicateDraws = 0;
 
   for (let index = 0; index < safeCount; index += 1) {
     const item = pokemon[Math.floor(Math.random() * pokemon.length)];
+    const wasMissing = (simulatedCounts[item.id] || 0) === 0;
     resultCounts[item.id] += 1;
-    if ((simulatedCounts[item.id] || 0) === 0) newlyOwned += 1;
+    if (wasMissing) newlyOwned += 1;
     else duplicateDraws += 1;
     simulatedCounts[item.id] = (simulatedCounts[item.id] || 0) + 1;
+    pulls.push({
+      ...item,
+      pullNumber: index + 1,
+      drawnCount: resultCounts[item.id],
+      wasMissing,
+    });
   }
 
   return {
     drawCount: safeCount,
     resultCounts,
+    pulls,
     newlyOwned,
     duplicateDraws,
     afterStats: getCollectionStats(simulatedCounts),
@@ -545,9 +556,52 @@ function runRandomDraw(drawCount) {
   };
 }
 
-function renderDrawResult(draw) {
+function createDrawCard(item, hidden = false) {
+  const card = document.createElement("article");
+  card.className = `draw-card${item.wasMissing ? " new" : ""}${hidden ? " hidden-card" : ""}`;
+  card.innerHTML = `
+    <div class="draw-card-inner">
+      <div class="draw-card-back">
+        <span>?</span>
+        <small>두근두근</small>
+      </div>
+      <div class="draw-card-front">
+        <span class="draw-badge">${item.wasMissing ? "NEW" : "중복"}</span>
+        <img src="${item.image}" alt="" loading="lazy" />
+        <strong>${item.name}</strong>
+        <small>${item.type}</small>
+        <span class="draw-count">#${item.pullNumber}</span>
+        ${
+          item.drawnCount > 1
+            ? `<span class="draw-stack">같은 씰 ×${item.drawnCount}</span>`
+            : ""
+        }
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function setDrawControlsDisabled(disabled) {
+  isDrawing = disabled;
+  elements.runDrawButton.disabled = disabled;
+  elements.drawCountInput.disabled = disabled;
+  document.querySelectorAll("[data-draw-count]").forEach((button) => {
+    button.disabled = disabled;
+  });
+  elements.applyDrawButton.disabled = disabled || !latestDrawCounts;
+}
+
+async function renderDrawResult(draw, animate = true) {
   latestDrawCounts = draw.resultCounts;
   elements.drawCountInput.value = String(draw.drawCount);
+  setDrawControlsDisabled(Boolean(animate));
   elements.drawSummary.replaceChildren(
     ...[
       ["뽑은 씰", `${draw.drawCount}장`, "이번 시뮬레이션"],
@@ -560,34 +614,35 @@ function renderDrawResult(draw) {
     }),
   );
 
-  const items = pokemon
-    .filter(({ id }) => draw.resultCounts[id] > 0)
-    .map((item) => ({
-      ...item,
-      drawn: draw.resultCounts[item.id],
-      wasMissing: (state.counts[item.id] || 0) === 0,
-    }));
-
-  elements.drawResultList.replaceChildren(
-    ...items.map((item) => {
-      const card = document.createElement("article");
-      card.className = `draw-card${item.wasMissing ? " new" : ""}`;
-      card.innerHTML = `
-        <span class="draw-badge">${item.wasMissing ? "NEW" : "중복"}</span>
-        <img src="${item.image}" alt="" loading="lazy" />
-        <strong>${item.name}</strong>
-        <small>${item.type}</small>
-        <span class="draw-count">×${item.drawn}</span>
-      `;
-      return card;
-    }),
-  );
-
   elements.drawResult.hidden = false;
+  elements.drawResultList.replaceChildren();
+
+  if (animate) {
+    const revealDelay = Math.max(18, Math.min(170, 520 / Math.sqrt(draw.drawCount)));
+    elements.drawStatus.textContent = "봉투를 뜯는 중이에요…";
+
+    for (const item of draw.pulls) {
+      const card = createDrawCard(item, true);
+      elements.drawResultList.appendChild(card);
+      elements.drawResultList.scrollTop = elements.drawResultList.scrollHeight;
+      await delay(revealDelay);
+      card.classList.remove("hidden-card");
+      card.classList.add("revealed");
+      elements.drawStatus.textContent = item.wasMissing
+        ? `반짝! ${item.name} 새 씰을 뽑았어요!`
+        : `${item.name} 등장! ${item.drawnCount > 1 ? `이번 뽑기에서 ${item.drawnCount}번째예요.` : "중복이에요."}`;
+      if (item.wasMissing) card.classList.add("spark");
+      await delay(Math.min(110, revealDelay));
+    }
+  } else {
+    elements.drawResultList.replaceChildren(...draw.pulls.map((item) => createDrawCard(item)));
+  }
+
   elements.drawStatus.textContent =
     draw.newlyOwned > 0
       ? `좋아요! 이번 뽑기로 새 씰 ${draw.newlyOwned}종을 얻을 수 있어요.`
       : "아쉽지만 이번 뽑기는 전부 중복이에요. 현실 고증이 너무 세네요…";
+  setDrawControlsDisabled(false);
 }
 
 function renderCompareList(container, items, counts, emptyMessage) {
@@ -1908,17 +1963,20 @@ elements.simulatorButton.addEventListener("click", () => {
 });
 
 document.querySelectorAll("[data-draw-count]").forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
+    if (isDrawing) return;
     elements.drawCountInput.value = button.dataset.drawCount;
-    renderDrawResult(runRandomDraw(button.dataset.drawCount));
+    await renderDrawResult(runRandomDraw(button.dataset.drawCount), true);
   });
 });
 
-elements.runDrawButton.addEventListener("click", () => {
-  renderDrawResult(runRandomDraw(elements.drawCountInput.value));
+elements.runDrawButton.addEventListener("click", async () => {
+  if (isDrawing) return;
+  await renderDrawResult(runRandomDraw(elements.drawCountInput.value), true);
 });
 
 elements.applyDrawButton.addEventListener("click", () => {
+  if (isDrawing) return;
   if (!latestDrawCounts) {
     elements.drawStatus.textContent = "먼저 뽑기를 진행해 주세요.";
     return;
