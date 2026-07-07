@@ -516,9 +516,11 @@ function getTradeComparison(friendCounts) {
 function resetDrawResult(message = "아직 뽑기 전이에요.") {
   latestDrawCounts = null;
   elements.drawResult.hidden = true;
+  elements.drawSummary.hidden = true;
   elements.drawSummary.replaceChildren();
   elements.drawResultList.replaceChildren();
   elements.drawStatus.textContent = message;
+  elements.applyDrawButton.hidden = true;
   elements.applyDrawButton.disabled = true;
 }
 
@@ -598,10 +600,7 @@ function setDrawControlsDisabled(disabled) {
   elements.applyDrawButton.disabled = disabled || !latestDrawCounts;
 }
 
-async function renderDrawResult(draw, animate = true) {
-  latestDrawCounts = draw.resultCounts;
-  elements.drawCountInput.value = String(draw.drawCount);
-  setDrawControlsDisabled(Boolean(animate));
+function renderDrawSummary(draw) {
   elements.drawSummary.replaceChildren(
     ...[
       ["뽑은 씰", `${draw.drawCount}장`, "이번 시뮬레이션"],
@@ -613,6 +612,17 @@ async function renderDrawResult(draw, animate = true) {
       return item;
     }),
   );
+  elements.drawSummary.hidden = false;
+  elements.applyDrawButton.hidden = false;
+}
+
+async function renderDrawResult(draw, animate = true) {
+  latestDrawCounts = draw.resultCounts;
+  elements.drawCountInput.value = String(draw.drawCount);
+  setDrawControlsDisabled(Boolean(animate));
+  elements.drawSummary.hidden = true;
+  elements.drawSummary.replaceChildren();
+  elements.applyDrawButton.hidden = true;
 
   elements.drawResult.hidden = false;
   elements.drawResultList.replaceChildren();
@@ -638,6 +648,7 @@ async function renderDrawResult(draw, animate = true) {
     elements.drawResultList.replaceChildren(...draw.pulls.map((item) => createDrawCard(item)));
   }
 
+  renderDrawSummary(draw);
   elements.drawStatus.textContent =
     draw.newlyOwned > 0
       ? `좋아요! 이번 뽑기로 새 씰 ${draw.newlyOwned}종을 얻을 수 있어요.`
