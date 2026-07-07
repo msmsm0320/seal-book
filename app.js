@@ -81,6 +81,15 @@ const elements = {
   summary: document.querySelector("#resultSummary"),
   shareButton: document.querySelector("#shareButton"),
   shareDialog: document.querySelector("#shareDialog"),
+  simulatorButton: document.querySelector("#simulatorButton"),
+  simulatorDialog: document.querySelector("#simulatorDialog"),
+  drawCountInput: document.querySelector("#drawCountInput"),
+  runDrawButton: document.querySelector("#runDrawButton"),
+  drawResult: document.querySelector("#drawResult"),
+  drawSummary: document.querySelector("#drawSummary"),
+  drawResultList: document.querySelector("#drawResultList"),
+  applyDrawButton: document.querySelector("#applyDrawButton"),
+  drawStatus: document.querySelector("#drawStatus"),
   codeButton: document.querySelector("#codeButton"),
   codeDialog: document.querySelector("#codeDialog"),
   codeTabs: document.querySelector("#codeTabs"),
@@ -129,6 +138,7 @@ let latestComparison = null;
 let latestFriendCounts = null;
 let sharedCollectionCodeFromUrl = null;
 let sharedCollectionCounts = null;
+let latestDrawCounts = null;
 
 function encodeBase64Url(text) {
   return btoa(text).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -500,6 +510,84 @@ function getTradeComparison(friendCounts) {
     myGain: friendGive.length,
     friendGain: myGive.length,
   };
+}
+
+function resetDrawResult(message = "아직 뽑기 전이에요.") {
+  latestDrawCounts = null;
+  elements.drawResult.hidden = true;
+  elements.drawSummary.replaceChildren();
+  elements.drawResultList.replaceChildren();
+  elements.drawStatus.textContent = message;
+}
+
+function runRandomDraw(drawCount) {
+  const safeCount = Math.min(500, Math.max(1, Math.floor(Number(drawCount) || 1)));
+  const resultCounts = Object.fromEntries(pokemon.map(({ id }) => [id, 0]));
+  const simulatedCounts = { ...state.counts };
+  let newlyOwned = 0;
+  let duplicateDraws = 0;
+
+  for (let index = 0; index < safeCount; index += 1) {
+    const item = pokemon[Math.floor(Math.random() * pokemon.length)];
+    resultCounts[item.id] += 1;
+    if ((simulatedCounts[item.id] || 0) === 0) newlyOwned += 1;
+    else duplicateDraws += 1;
+    simulatedCounts[item.id] = (simulatedCounts[item.id] || 0) + 1;
+  }
+
+  return {
+    drawCount: safeCount,
+    resultCounts,
+    newlyOwned,
+    duplicateDraws,
+    afterStats: getCollectionStats(simulatedCounts),
+    spent: safeCount * Math.max(0, Number(state.packPrice) || 0),
+  };
+}
+
+function renderDrawResult(draw) {
+  latestDrawCounts = draw.resultCounts;
+  elements.drawCountInput.value = String(draw.drawCount);
+  elements.drawSummary.replaceChildren(
+    ...[
+      ["뽑은 씰", `${draw.drawCount}장`, "이번 시뮬레이션"],
+      ["새로 얻음", `${draw.newlyOwned}종`, `반영 후 보유 ${draw.afterStats.owned}종`],
+      ["중복", `${draw.duplicateDraws}장`, `예상 비용 ${formatWon(draw.spent)}`],
+    ].map(([label, value, note]) => {
+      const item = document.createElement("div");
+      item.innerHTML = `<span>${label}</span><strong>${value}</strong><small>${note}</small>`;
+      return item;
+    }),
+  );
+
+  const items = pokemon
+    .filter(({ id }) => draw.resultCounts[id] > 0)
+    .map((item) => ({
+      ...item,
+      drawn: draw.resultCounts[item.id],
+      wasMissing: (state.counts[item.id] || 0) === 0,
+    }));
+
+  elements.drawResultList.replaceChildren(
+    ...items.map((item) => {
+      const card = document.createElement("article");
+      card.className = `draw-card${item.wasMissing ? " new" : ""}`;
+      card.innerHTML = `
+        <span class="draw-badge">${item.wasMissing ? "NEW" : "중복"}</span>
+        <img src="${item.image}" alt="" loading="lazy" />
+        <strong>${item.name}</strong>
+        <small>${item.type}</small>
+        <span class="draw-count">×${item.drawn}</span>
+      `;
+      return card;
+    }),
+  );
+
+  elements.drawResult.hidden = false;
+  elements.drawStatus.textContent =
+    draw.newlyOwned > 0
+      ? `좋아요! 이번 뽑기로 새 씰 ${draw.newlyOwned}종을 얻을 수 있어요.`
+      : "아쉽지만 이번 뽑기는 전부 중복이에요. 현실 고증이 너무 세네요…";
 }
 
 function renderCompareList(container, items, counts, emptyMessage) {
@@ -1814,6 +1902,39 @@ elements.shareButton.addEventListener("click", async () => {
   elements.shareStatus.textContent = "이미지가 준비됐어요.";
 });
 
+elements.simulatorButton.addEventListener("click", () => {
+  resetDrawResult();
+  elements.simulatorDialog.showModal();
+});
+
+document.querySelectorAll("[data-draw-count]").forEach((button) => {
+  button.addEventListener("click", () => {
+    elements.drawCountInput.value = button.dataset.drawCount;
+    renderDrawResult(runRandomDraw(button.dataset.drawCount));
+  });
+});
+
+elements.runDrawButton.addEventListener("click", () => {
+  renderDrawResult(runRandomDraw(elements.drawCountInput.value));
+});
+
+elements.applyDrawButton.addEventListener("click", () => {
+  if (!latestDrawCounts) {
+    elements.drawStatus.textContent = "먼저 뽑기를 진행해 주세요.";
+    return;
+  }
+
+  pokemon.forEach(({ id }) => {
+    state.counts[id] = (state.counts[id] || 0) + (latestDrawCounts[id] || 0);
+  });
+  saveCollection();
+  render();
+  if (elements.codeDialog.open) refreshCollectionCode();
+  resetDrawResult("뽑기 결과를 내 도감에 반영했어요.");
+  elements.simulatorDialog.close();
+  showToast("뽑기 결과를 내 도감에 반영했어요!");
+});
+
 elements.codeButton.addEventListener("click", () => {
   refreshCollectionCode();
   elements.shareQrPanel.hidden = true;
@@ -2132,6 +2253,12 @@ elements.shareDialog.addEventListener("click", (event) => {
   if (event.target === elements.shareDialog) {
     hideCanvasMagnifier();
     elements.shareDialog.close();
+  }
+});
+
+elements.simulatorDialog.addEventListener("click", (event) => {
+  if (event.target === elements.simulatorDialog) {
+    elements.simulatorDialog.close();
   }
 });
 

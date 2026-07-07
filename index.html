@@ -29,6 +29,9 @@
           <button class="button button-ghost" id="codeButton" type="button">
             <span aria-hidden="true">⌁</span> 코드 공유
           </button>
+          <button class="button button-ghost" id="simulatorButton" type="button">
+            <span aria-hidden="true">?</span> 랜덤 뽑기
+          </button>
           <button class="button button-dark" id="shareButton" type="button">
             <span aria-hidden="true">▣</span> 도감 이미지
           </button>
@@ -301,6 +304,40 @@
           </div>
         </section>
         <p class="share-status" id="codeStatus">코드가 준비됐어요.</p>
+      </form>
+    </dialog>
+
+    <dialog id="simulatorDialog">
+      <form method="dialog" class="dialog-card simulator-dialog-card">
+        <button class="dialog-close" value="close" aria-label="닫기">×</button>
+        <span class="dialog-icon" aria-hidden="true">?</span>
+        <h2>랜덤 뽑기 시뮬레이터</h2>
+        <p>빵을 샀다고 상상하고 현재 도감 기준으로 새 씰이 얼마나 나오는지 확인해 보세요.</p>
+
+        <div class="simulator-controls">
+          <label>
+            뽑을 개수
+            <input id="drawCountInput" type="number" min="1" max="500" step="1" value="5" />
+          </label>
+          <div class="draw-presets" aria-label="빠른 뽑기">
+            <button class="draw-preset" data-draw-count="1" type="button">1개</button>
+            <button class="draw-preset" data-draw-count="5" type="button">5개</button>
+            <button class="draw-preset" data-draw-count="10" type="button">10개</button>
+            <button class="draw-preset" data-draw-count="30" type="button">30개</button>
+          </div>
+          <button id="runDrawButton" class="button button-dark save-image-button" type="button">
+            뽑기 시작
+          </button>
+        </div>
+
+        <div class="draw-result" id="drawResult" hidden>
+          <div class="draw-summary" id="drawSummary"></div>
+          <div class="draw-result-list" id="drawResultList"></div>
+          <button id="applyDrawButton" class="button button-ghost save-image-button" type="button">
+            결과를 내 도감에 반영
+          </button>
+        </div>
+        <p class="share-status" id="drawStatus">아직 뽑기 전이에요.</p>
       </form>
     </dialog>
 

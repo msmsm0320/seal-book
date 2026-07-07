@@ -836,6 +836,173 @@ dialog .save-image-button.button-ghost:hover {
   height: auto;
 }
 
+.simulator-dialog-card {
+  text-align: left;
+}
+
+#simulatorDialog {
+  width: min(760px, calc(100% - 32px));
+}
+
+.simulator-dialog-card .dialog-icon,
+.simulator-dialog-card h2,
+.simulator-dialog-card > p,
+.simulator-dialog-card .share-status {
+  text-align: center;
+}
+
+.simulator-controls {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--paper);
+}
+
+.simulator-controls label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.simulator-controls input {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 14px;
+  background: var(--white);
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.draw-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.draw-preset {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--white);
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.draw-preset:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.draw-result {
+  margin-top: 16px;
+}
+
+.draw-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.draw-summary div {
+  padding: 12px 8px;
+  border-radius: 13px;
+  background: #fffaf2;
+  text-align: center;
+}
+
+.draw-summary span,
+.draw-summary small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.draw-summary strong {
+  display: block;
+  margin: 4px 0;
+  color: var(--orange);
+  font-size: 20px;
+}
+
+.draw-result-list {
+  display: grid;
+  max-height: 360px;
+  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  overflow: auto;
+  padding: 4px;
+}
+
+.draw-card {
+  position: relative;
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  padding: 12px 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--white);
+  text-align: center;
+}
+
+.draw-card.new {
+  border-color: var(--orange);
+  box-shadow: 0 8px 20px rgba(255, 91, 50, 0.12);
+}
+
+.draw-card img {
+  width: 86px;
+  height: 86px;
+  object-fit: contain;
+}
+
+.draw-card strong {
+  font-size: 13px;
+}
+
+.draw-card small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.draw-badge,
+.draw-count {
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.draw-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 7px;
+  background: #eeeae0;
+  color: var(--muted);
+}
+
+.draw-card.new .draw-badge {
+  background: var(--orange);
+  color: var(--white);
+}
+
+.draw-count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 7px;
+  background: var(--ink);
+  color: var(--white);
+}
+
 .code-dialog-card {
   text-align: left;
 }
@@ -1272,8 +1439,13 @@ dialog .save-image-button.button-ghost:hover {
   }
 
   .compare-summary,
+  .draw-summary,
   .compare-columns {
     grid-template-columns: 1fr;
+  }
+
+  .draw-presets {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .main-content {
