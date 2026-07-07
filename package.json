@@ -1,0 +1,12 @@
+{
+  "name": "seal-book",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:stickers": "node scripts/prepare-stickers.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.33.5"
+  }
+}

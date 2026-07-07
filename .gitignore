@@ -3,3 +3,6 @@
 Thumbs.db
 Desktop.ini
 *.log
+node_modules/
+assets/stickers-source/*
+!assets/stickers-source/README.md
