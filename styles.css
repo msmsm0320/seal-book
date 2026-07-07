@@ -860,6 +860,42 @@ dialog .save-image-button.button-ghost:hover {
   background: var(--paper);
 }
 
+.draw-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 5px;
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.draw-mode {
+  min-height: 52px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.draw-mode small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.draw-mode.active {
+  background: var(--orange);
+  color: var(--white);
+  box-shadow: 0 7px 18px rgba(255, 91, 50, 0.22);
+}
+
+.draw-mode.active small {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .simulator-controls label {
   display: grid;
   gap: 7px;
@@ -901,6 +937,80 @@ dialog .save-image-button.button-ghost:hover {
 
 .draw-result {
   margin-top: 16px;
+}
+
+.new-draw-spotlight {
+  display: grid;
+  min-height: 390px;
+  margin-bottom: 12px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255, 216, 77, 0.55), transparent 35%),
+    linear-gradient(135deg, #fff4c2, #fffaf2 58%, #ffe8de);
+}
+
+.new-draw-spotlight-card {
+  position: relative;
+  display: grid;
+  width: min(360px, 92%);
+  min-height: 350px;
+  place-items: center;
+  padding: 26px 22px;
+  border: 3px solid var(--orange);
+  border-radius: 28px;
+  background: var(--white);
+  box-shadow: 0 24px 65px rgba(255, 91, 50, 0.28);
+  text-align: center;
+  animation: spotlight-pop 500ms cubic-bezier(0.2, 0.8, 0.25, 1.28) both;
+}
+
+.new-draw-spotlight-card::before,
+.new-draw-spotlight-card::after {
+  position: absolute;
+  inset: -18px;
+  border: 2px solid rgba(255, 216, 77, 0.85);
+  border-radius: 34px;
+  animation: spotlight-ring 1600ms ease-out infinite;
+  content: "";
+  pointer-events: none;
+}
+
+.new-draw-spotlight-card::after {
+  animation-delay: 450ms;
+}
+
+.spotlight-label {
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.new-draw-spotlight-card img {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  animation: spotlight-float 1200ms ease-in-out infinite alternate;
+}
+
+.new-draw-spotlight-card strong {
+  font-size: 28px;
+}
+
+.new-draw-spotlight-card small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.new-draw-spotlight-card p {
+  margin: 0;
+  color: var(--orange);
+  font-weight: 900;
 }
 
 .draw-summary {
@@ -1100,6 +1210,45 @@ dialog .save-image-button.button-ghost:hover {
   100% {
     opacity: 0;
     transform: scale(1.18);
+  }
+}
+
+@keyframes spotlight-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.72) rotate(-3deg);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.05) rotate(1deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0);
+  }
+}
+
+@keyframes spotlight-ring {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.92);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.14);
+  }
+}
+
+@keyframes spotlight-float {
+  from {
+    transform: translateY(0) rotate(-2deg);
+  }
+
+  to {
+    transform: translateY(-8px) rotate(2deg);
   }
 }
 
@@ -1546,6 +1695,19 @@ dialog .save-image-button.button-ghost:hover {
 
   .draw-presets {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .new-draw-spotlight {
+    min-height: 330px;
+  }
+
+  .new-draw-spotlight-card {
+    min-height: 300px;
+  }
+
+  .new-draw-spotlight-card img {
+    width: 145px;
+    height: 145px;
   }
 
   .main-content {

@@ -83,9 +83,11 @@ const elements = {
   shareDialog: document.querySelector("#shareDialog"),
   simulatorButton: document.querySelector("#simulatorButton"),
   simulatorDialog: document.querySelector("#simulatorDialog"),
+  drawModeTabs: document.querySelector("#drawModeTabs"),
   drawCountInput: document.querySelector("#drawCountInput"),
   runDrawButton: document.querySelector("#runDrawButton"),
   drawResult: document.querySelector("#drawResult"),
+  newDrawSpotlight: document.querySelector("#newDrawSpotlight"),
   drawSummary: document.querySelector("#drawSummary"),
   drawResultList: document.querySelector("#drawResultList"),
   applyDrawButton: document.querySelector("#applyDrawButton"),
@@ -140,6 +142,7 @@ let sharedCollectionCodeFromUrl = null;
 let sharedCollectionCounts = null;
 let latestDrawCounts = null;
 let isDrawing = false;
+let drawMode = "cinematic";
 
 function encodeBase64Url(text) {
   return btoa(text).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -597,7 +600,26 @@ function setDrawControlsDisabled(disabled) {
   document.querySelectorAll("[data-draw-count]").forEach((button) => {
     button.disabled = disabled;
   });
+  elements.drawModeTabs.querySelectorAll("[data-draw-mode]").forEach((button) => {
+    button.disabled = disabled;
+  });
   elements.applyDrawButton.disabled = disabled || !latestDrawCounts;
+}
+
+async function showNewDrawSpotlight(item) {
+  elements.newDrawSpotlight.innerHTML = `
+    <div class="new-draw-spotlight-card">
+      <span class="spotlight-label">NEW!</span>
+      <img src="${item.image}" alt="" />
+      <strong>${item.name}</strong>
+      <small>${item.type} · NO.${String(item.id).padStart(3, "0")}</small>
+      <p>없는 씰을 새로 뽑았어요!</p>
+    </div>
+  `;
+  elements.newDrawSpotlight.hidden = false;
+  await delay(3000);
+  elements.newDrawSpotlight.hidden = true;
+  elements.newDrawSpotlight.replaceChildren();
 }
 
 function renderDrawSummary(draw) {
@@ -642,6 +664,10 @@ async function renderDrawResult(draw, animate = true) {
         ? `반짝! ${item.name} 새 씰을 뽑았어요!`
         : `${item.name} 등장! ${item.drawnCount > 1 ? `이번 뽑기에서 ${item.drawnCount}번째예요.` : "중복이에요."}`;
       if (item.wasMissing) card.classList.add("spark");
+      if (item.wasMissing && drawMode === "cinematic") {
+        elements.drawStatus.textContent = `${item.name} 새 씰! 잠깐 감상하고 이어갈게요.`;
+        await showNewDrawSpotlight(item);
+      }
       await delay(Math.min(110, revealDelay));
     }
   } else {
@@ -1971,6 +1997,19 @@ elements.shareButton.addEventListener("click", async () => {
 elements.simulatorButton.addEventListener("click", () => {
   resetDrawResult();
   elements.simulatorDialog.showModal();
+});
+
+elements.drawModeTabs.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-draw-mode]");
+  if (!button || isDrawing) return;
+  drawMode = button.dataset.drawMode;
+  elements.drawModeTabs.querySelectorAll("[data-draw-mode]").forEach((item) => {
+    item.classList.toggle("active", item === button);
+  });
+  elements.drawStatus.textContent =
+    drawMode === "cinematic"
+      ? "기본 모드예요. 새 씰이 나오면 크게 보여줘요."
+      : "빠르게 모드예요. 멈춤 없이 바로 뽑아요.";
 });
 
 document.querySelectorAll("[data-draw-count]").forEach((button) => {
