@@ -1003,6 +1003,13 @@ dialog .save-image-button.button-ghost:hover {
   font-weight: 900;
 }
 
+.new-draw-spotlight-card em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .draw-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

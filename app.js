@@ -614,10 +614,20 @@ async function showNewDrawSpotlight(item) {
       <strong>${item.name}</strong>
       <small>${item.type} · NO.${String(item.id).padStart(3, "0")}</small>
       <p>없는 씰을 새로 뽑았어요!</p>
+      <em>클릭하면 바로 이어서 뽑아요</em>
     </div>
   `;
   elements.newDrawSpotlight.hidden = false;
-  await delay(3000);
+
+  await new Promise((resolve) => {
+    const timer = setTimeout(resolve, 3000);
+    const close = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    elements.newDrawSpotlight.addEventListener("click", close, { once: true });
+  });
+
   elements.newDrawSpotlight.hidden = true;
   elements.newDrawSpotlight.replaceChildren();
 }
