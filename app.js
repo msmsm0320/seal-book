@@ -620,7 +620,7 @@ async function showNewDrawSpotlight(item) {
   elements.newDrawSpotlight.hidden = false;
 
   await new Promise((resolve) => {
-    const timer = setTimeout(resolve, 3000);
+    const timer = setTimeout(resolve, 1500);
     const close = () => {
       clearTimeout(timer);
       resolve();
